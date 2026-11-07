@@ -4,8 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Hamster Dash</title>
-<meta name="description" content="Hamster Dash — a tiny endless runner. Help the hamster dash through the burrow, hop over pebbles and roots, and stuff its cheeks with sunflower seeds.">
-<!-- SQUEEKCHAIN_VERIFY: verification meta tag goes here -->
+<meta name="description" content="Hamster Dash — a Squeekchain community endless runner. Reads the live Squeekchain economy and unlocks a Squeek skin for wallets holding a Squeek.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐹</text></svg>">
 <style>
   :root { --bg:#1b1410; --fg:#fbe9d0; --accent:#f2a33a; }
@@ -24,19 +23,46 @@
   button { font:inherit; font-size:20px; font-weight:700; padding:12px 28px; border:0; border-radius:999px;
     background:var(--accent); color:#2a1a0c; cursor:pointer; }
   button:active { transform:translateY(1px); }
+  #overlay { overflow-y:auto; justify-content:safe center; }
+  .sub { font-size:14px; letter-spacing:2px; text-transform:uppercase; color:#5fd3b5; }
+  #sq { width:100%; max-width:440px; border:1px solid #5fd3b555; border-radius:14px; padding:12px 14px; text-align:left;
+    background:#0f1a17aa; font-size:14px; }
+  #sq h2 { font-size:13px; letter-spacing:2px; text-transform:uppercase; color:#5fd3b5; margin-bottom:8px; display:flex; justify-content:space-between; gap:8px; }
+  #sq h2 small { color:var(--fg); opacity:.6; letter-spacing:0; text-transform:none; font-weight:400; }
+  #stats { display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; }
+  #stats div { display:flex; flex-direction:column; }
+  #stats b { font-size:16px; color:var(--fg); }
+  #stats span { font-size:11px; opacity:.65; }
+  #own { margin-top:12px; border-top:1px dashed #5fd3b544; padding-top:10px; }
+  #own form { display:flex; gap:6px; margin-top:6px; }
+  #own input { flex:1; min-width:0; font:inherit; font-size:13px; padding:8px 10px; border-radius:8px; border:1px solid #5fd3b566;
+    background:#0b1210; color:var(--fg); }
+  #own button { font-size:13px; padding:8px 14px; background:#5fd3b5; }
+  #ownmsg { margin-top:6px; font-size:12px; opacity:.85; min-height:1em; }
+  #round { color:#5fd3b5; }
   footer { position:fixed; bottom:8px; width:100%; text-align:center; font-size:12px; opacity:.55; }
   footer a { color:inherit; }
 </style>
 </head>
 <body>
 <div id="wrap"><canvas id="c"></canvas></div>
-<div id="hud"><span id="score">🌻 0</span><span id="best">Best 0</span></div>
+<div id="hud"><span id="score">🌻 0</span><span id="round" title="Current Squeekchain round (Sepolia)"></span><span id="best">Best 0</span></div>
 <div id="overlay">
+  <div class="sub">A Squeekchain community game</div>
   <h1>🐹 Hamster Dash</h1>
   <p id="msg">Dash through the burrow. <b>Tap / Space</b> to hop (twice for a double hop). Grab sunflower seeds, dodge pebbles and roots.</p>
   <button id="play">Play</button>
+  <section id="sq" aria-live="polite">
+    <h2>Live from Squeekchain <small id="sqnet">loading…</small></h2>
+    <div id="stats"></div>
+    <div id="own">
+      <b>Got a Squeek?</b> Paste a wallet address — read-only, nothing to connect or sign.
+      <form id="ownform"><input id="addr" placeholder="0x…" autocomplete="off" spellcheck="false"><button type="submit">Check</button></form>
+      <div id="ownmsg"></div>
+    </div>
+  </section>
 </div>
-<footer>Made with 🌻 · <a href="https://github.com/bogemon458/hamsterdash" id="src">source</a></footer>
+<footer>Built for <a href="https://squeekchain.com" target="_blank" rel="noopener">Squeekchain</a> 🐹 · <a href="https://github.com/bogemon458/hamsterdash" id="src">source</a></footer>
 <script>
 (() => {
   const cv = document.getElementById('c'), ctx = cv.getContext('2d');
@@ -61,6 +87,12 @@
   const G = 2600, JUMP = 900;
   let state = 'menu', t = 0, speed, dist, seeds, obstacles, pickups, particles, spawnIn, seedIn, hills;
   const ham = { x: 0, y: 0, vy: 0, jumps: 0, r: 26, squash: 1 };
+  // Squeekchain perks (set by the read-only wallet check below)
+  const perks = { squeek: false, sqk: false };
+  const SKIN = {
+    normal: { body:'#e8a25c', belly:'#fbe7c8', ear:'#d98c45', cheek:'#f7c08a' },
+    squeek: { body:'#2fbf9b', belly:'#d9fff3', ear:'#1f9a7c', cheek:'#8ff0d4' },
+  };
 
   function reset() {
     speed = 360; dist = 0; seeds = 0; obstacles = []; pickups = []; particles = [];
@@ -142,7 +174,7 @@
       if ((hx - cx) ** 2 + (hy - cy) ** 2 < (r * 0.72) ** 2) { puff(hx, hy, 18, '#f2a33a'); over(); return; }
     }
     for (const p of pickups) {
-      if ((p.x - hx) ** 2 + (p.y - hy) ** 2 < (r + 10 * S) ** 2) { p.got = true; seeds++; puff(p.x, p.y, 4, '#ffe08a'); }
+      if ((p.x - hx) ** 2 + (p.y - hy) ** 2 < (r + 10 * S) ** 2) { p.got = true; seeds += perks.sqk ? 2 : 1; puff(p.x, p.y, 4, '#ffe08a'); }
     }
     $score.textContent = '🌻 ' + (seeds * 10 + Math.floor(dist / 100));
   }
@@ -191,21 +223,27 @@
     ctx.beginPath(); ctx.ellipse(-r * 0.45 + run * 5, -r * 0.08, r * 0.22, r * 0.12, 0, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(r * 0.45 - run * 5, -r * 0.08, r * 0.22, r * 0.12, 0, 0, Math.PI * 2); ctx.fill();
     // body
-    ctx.fillStyle = '#e8a25c';
+    const sk = perks.squeek ? SKIN.squeek : SKIN.normal;
+    ctx.fillStyle = sk.body;
     ctx.beginPath(); ctx.ellipse(0, -r * 0.9, r * 1.15, r * 0.9, 0, 0, Math.PI * 2); ctx.fill();
     // belly
-    ctx.fillStyle = '#fbe7c8';
+    ctx.fillStyle = sk.belly;
     ctx.beginPath(); ctx.ellipse(r * 0.35, -r * 0.7, r * 0.65, r * 0.55, 0, 0, Math.PI * 2); ctx.fill();
     // ears
-    ctx.fillStyle = '#d98c45';
+    ctx.fillStyle = sk.ear;
     ctx.beginPath(); ctx.arc(r * 0.25, -r * 1.7, r * 0.26, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.arc(-r * 0.3, -r * 1.65, r * 0.24, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#f4b6a6';
     ctx.beginPath(); ctx.arc(r * 0.25, -r * 1.7, r * 0.13, 0, Math.PI * 2); ctx.fill();
     // cheek (grows with seeds!)
     const cheek = Math.min(1.6, 1 + seeds * 0.02);
-    ctx.fillStyle = '#f7c08a';
+    ctx.fillStyle = sk.cheek;
     ctx.beginPath(); ctx.ellipse(r * 0.85, -r * 0.85, r * 0.3 * cheek, r * 0.26 * cheek, 0, 0, Math.PI * 2); ctx.fill();
+    if (perks.squeek) { // Squeekchain LED-dot badge on the back
+      ctx.fillStyle = '#eafff8';
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) if ((i + j) % 2 === 0)
+        { ctx.beginPath(); ctx.arc(-r * 0.75 + i * r * 0.18, -r * 1.25 + j * r * 0.18, r * 0.05, 0, Math.PI * 2); ctx.fill(); }
+    }
     // eye
     ctx.fillStyle = '#1a0f08';
     ctx.beginPath(); ctx.arc(r * 0.72, -r * 1.2, r * 0.11, 0, Math.PI * 2); ctx.fill();
@@ -247,6 +285,84 @@
     for (const p of particles) { ctx.globalAlpha = Math.max(0, p.life * 2); ctx.fillStyle = p.col; ctx.fillRect(p.x, p.y, 4, 4); }
     ctx.globalAlpha = 1;
   }
+
+  // ---------- Squeekchain (read-only) ----------
+  // Live economy: Squeekchain public API. Ownership: eth_call balanceOf on the Squeekchain
+  // contracts on Sepolia. No wallet connection, no signatures, no transactions.
+  const SQ = {
+    api: 'https://api.squeekchain.com/v1/economy/state',
+    rpcs: ['https://ethereum-sepolia-rpc.publicnode.com', 'https://sepolia.drpc.org'],
+    collection: '0xc4c7982657f00509548f3a3a41db7fa439a6856b', // Squeek (SQUEEK) collection
+    token: '0xd78a3956cf63164d1fa1c622ad3c66623162fa1e',      // SQK token
+  };
+  const $stats = document.getElementById('stats'), $net = document.getElementById('sqnet');
+  const $round = document.getElementById('round'), $ownmsg = document.getElementById('ownmsg');
+  const $addr = document.getElementById('addr');
+  const fmt = n => Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 2 }).format(n);
+  const units = (v, d = 18) => { try { return Number(BigInt(v) / 10n ** BigInt(d - 4)) / 1e4; } catch (e) { return NaN; } };
+  const esc = x => String(x).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+
+  async function loadEconomy() {
+    try {
+      const r = await fetch(SQ.api, { cache: 'no-store' });
+      if (!r.ok) throw new Error(r.status);
+      const s = await r.json();
+      const d = s.asset?.decimals ?? 18, sym = s.asset?.symbol || 'SQK';
+      if (s.asset?.address) SQ.token = s.asset.address;
+      const rows = [
+        ['Round', '#' + (s.lifecycle?.currentRound ?? s.capabilities?.core?.currentRound ?? '?')],
+        ['Mining', s.capabilities?.mining?.phase || s.lifecycle?.stage || '?'],
+        [sym + ' live supply', fmt(units(s.supply?.liveSupplyBaseUnits, d))],
+        [sym + ' staked', fmt(units(s.staking?.totalStakedBaseUnits, d))],
+        ['Squeeks alive', s.nft?.live ? fmt(+s.nft.live) : '?'],
+        ['Squeeks merged away', s.nft?.burned ? fmt(+s.nft.burned) : '?'],
+      ];
+      $stats.innerHTML = rows.map(([k, v]) => `<div><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join('');
+      $net.textContent = (s.chain?.target || 'sepolia') + ' · block ' + (s.chain?.safeThroughBlock || '?');
+      $round.textContent = '⛓ Round ' + (s.lifecycle?.currentRound ?? '');
+    } catch (e) {
+      $net.textContent = 'offline — retrying';
+    }
+  }
+  loadEconomy(); setInterval(loadEconomy, 60000);
+
+  async function ethCall(to, data) {
+    let lastErr;
+    for (const url of SQ.rpcs) {
+      try {
+        const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to, data }, 'latest'] }) });
+        const j = await r.json();
+        if (j.result) return j.result;
+        lastErr = j.error?.message;
+      } catch (e) { lastErr = e.message; }
+    }
+    throw new Error(lastErr || 'rpc failed');
+  }
+  const balanceOf = (token, who) => ethCall(token, '0x70a08231' + who.slice(2).toLowerCase().padStart(64, '0')).then(BigInt);
+
+  async function checkWallet(addr) {
+    addr = (addr || '').trim();
+    if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) { $ownmsg.textContent = 'That is not a valid 0x address.'; return; }
+    $ownmsg.textContent = 'Checking Squeekchain…';
+    try {
+      const [nfts, sqk] = await Promise.all([balanceOf(SQ.collection, addr), balanceOf(SQ.token, addr)]);
+      perks.squeek = nfts > 0n; perks.sqk = sqk > 0n;
+      const parts = [];
+      parts.push(perks.squeek ? `🐹 ${nfts} Squeek${nfts > 1n ? 's' : ''} found — Squeek skin unlocked!` : 'No Squeek in this wallet.');
+      parts.push(perks.sqk ? `🌻 ${fmt(units(sqk))} SQK — seeds count double.` : 'No SQK.');
+      $ownmsg.textContent = parts.join(' ');
+      try { localStorage.setItem('hd_addr', addr); } catch (e) {}
+    } catch (e) {
+      $ownmsg.textContent = 'Could not reach Squeekchain right now (' + e.message + ').';
+    }
+  }
+  document.getElementById('ownform').addEventListener('submit', e => { e.preventDefault(); checkWallet($addr.value); });
+  $addr.addEventListener('keydown', e => e.stopPropagation()); // typing a space must not start the game
+  try {
+    const saved = new URLSearchParams(location.search).get('address') || localStorage.getItem('hd_addr');
+    if (saved) { $addr.value = saved; checkWallet(saved); }
+  } catch (e) {}
 
   let last = performance.now();
   function frame(now) {
