@@ -388,10 +388,10 @@
       const realM = wheelMm / 1000;
       const race = wheelSeen
         ? `The real hamster ran <b>${realM.toFixed(1)} m</b> on its wheel during your run.`
-        : 'The real hamster was resting during your run.';
+        : '';
       $msg.innerHTML = (isBest ? '<b>New best!</b><br>' : '') +
         `Score <b>${s}</b> · ${seeds} seeds · ${Math.floor(dist / 100)} m<br>` +
-        `Round #${courseRound} course · your best this round: <b>${rb}</b><br>${race}`;
+        `Round #${courseRound} course · your best this round: <b>${rb}</b>` + (race ? `<br>${race}` : '');
       $play.textContent = 'Again';
       $ov.classList.remove('hidden'); $ov.scrollTop = 0;
     }, 550); // let the bonk play out before the menu covers it
@@ -416,27 +416,21 @@
   }
 
   // the real Squeekchain hamster, drawn as a translucent "LIVE" ghost on the far ridge:
-  // runs at its real wheel speed when ACTIVE, sleeps when IDLE
+  // shown only while the real hamster is running (coreStatus ACTIVE), at its real wheel speed
   function drawGhost() {
-    if (!live.fresh) return;
-    const r = 18 * S, gy = GROUND - 70 * S;
-    const on = wheelOn(), sp = Math.min(3, live.speed / 300);
-    const gx = W * 0.62 + (on ? Math.sin(t * 0.6) * 40 * S : 0);
-    ctx.save(); ctx.globalAlpha = 0.55;
-    ctx.fillStyle = '#5fd3b5';
-    const step = on ? Math.sin(t * (10 + sp * 12)) : 0;
+    if (!wheelOn() || state !== 'play') return; // only while the real hamster is actually running
+    const r = 18 * S, gy = GROUND - 70 * S, sp = Math.min(3, live.speed / 300);
+    const gx = W * 0.62 + Math.sin(t * 0.6) * 40 * S;
+    ctx.save(); ctx.globalAlpha = 0.55; ctx.fillStyle = '#5fd3b5';
+    const step = Math.sin(t * (10 + sp * 12));
     ellipse(gx - r * 0.45 + step * 4, gy - r * 0.08, r * 0.22, r * 0.12);
     ellipse(gx + r * 0.45 - step * 4, gy - r * 0.08, r * 0.22, r * 0.12);
-    ellipse(gx, gy - r * (on ? 0.9 : 0.6), r * 1.15, r * (on ? 0.9 : 0.6));
-    circle(gx + r * 0.25, gy - r * (on ? 1.7 : 1.2), r * 0.26);
-    ctx.fillStyle = '#0f1a17';
-    if (on) circle(gx + r * 0.72, gy - r * 1.2, r * 0.1);
-    else ctx.fillRect(gx + r * 0.55, gy - r * 0.8, r * 0.25, r * 0.06);
+    ellipse(gx, gy - r * 0.9, r * 1.15, r * 0.9);
+    circle(gx + r * 0.25, gy - r * 1.7, r * 0.26);
+    ctx.fillStyle = '#0f1a17'; circle(gx + r * 0.72, gy - r * 1.2, r * 0.1);
     ctx.globalAlpha = 0.9; ctx.fillStyle = '#5fd3b5';
     ctx.font = `600 ${Math.round(11 * S)}px Fredoka, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(on ? `LIVE · ${(live.speed / 1000).toFixed(2)} m/s` : 'LIVE · resting', gx, gy - r * 2.6);
-    if (!on) { ctx.font = `600 ${Math.round(14 * S)}px Fredoka, sans-serif`;
-      ctx.fillText('z', gx + r * 1.3, gy - r * 1.4 - Math.sin(t * 2) * 3); ctx.fillText('z', gx + r * 1.8, gy - r * 2 - Math.sin(t * 2 + 1) * 3); }
+    ctx.fillText(`LIVE · ${(live.speed / 1000).toFixed(2)} m/s`, gx, gy - r * 2.6);
     ctx.restore();
   }
 
@@ -611,7 +605,7 @@
     $live.classList.toggle('on', on);
     $livetxt.innerHTML = !live.fresh ? 'The real hamster’s wheel feed is offline right now.'
       : on ? `<b>The real hamster is running!</b> ${(live.speed / 1000).toFixed(2)} m/s · ${live.rpm.toFixed(0)} rpm — seeds count <b>double</b> right now.`
-      : 'The real hamster is resting. Seeds count double the moment it hops back on its wheel.';
+      : 'Seeds count double whenever the real hamster is running on its wheel.';
   }
   const mmss = n => Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0');
   function tickClock() {
