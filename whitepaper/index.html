@@ -50,6 +50,17 @@
   .flow { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:14px 0; }
   .flow div { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:8px 12px; font-weight:600; }
   .flow i { color:var(--sq); font-style:normal; }
+  .hero { display:grid; grid-template-columns:1fr 250px; gap:28px; align-items:center; }
+  .hero canvas { width:250px; height:250px; display:block; }
+  .wheelcap { text-align:center; font-size:13px; color:var(--dim); margin-top:2px; }
+  .wheelcap b { color:var(--sq); }
+  @media (max-width:720px) { .hero { grid-template-columns:1fr; } .hero .w { order:-1; justify-self:center; } .hero canvas { width:200px; height:200px; } }
+  .track { position:relative; height:4px; background:#ffffff10; }
+  .track i { position:absolute; left:0; top:0; bottom:0; width:0; background:linear-gradient(90deg, var(--sq), var(--accent)); }
+  #runner { position:absolute; top:-26px; left:0; width:44px; height:30px; pointer-events:none; }
+  .anim { width:100%; height:200px; display:block; background:#0004; border:1px solid var(--line); border-radius:16px; margin:16px 0 8px; }
+  .anim.short { height:180px; }
+  .cap { font-size:13px; color:var(--dim); margin-bottom:14px; }
   footer { max-width:860px; margin:0 auto; padding:24px 16px 40px; color:var(--dim); font-size:14px; border-top:1px solid var(--line); }
 </style>
 </head>
@@ -57,12 +68,18 @@
 <header class="top"><div class="in">
   <a class="brand" href="../">Hamster Dash</a>
   <a class="play" href="../">Play</a>
-</div></header>
+</div><div class="track"><i id="prog"></i><canvas id="runner" width="88" height="60"></canvas></div></header>
 
 <main>
-  <div class="kicker">Whitepaper · v1 · November 2026</div>
-  <h1>Hamster Dash</h1>
-  <p class="lead">An endless runner built on top of Squeekchain, the blockchain powered by a real hamster on a real wheel. The course, the bonuses and the rewards in the game all come from live Squeekchain data, and the reward math uses the same rules as the chain.</p>
+  <div class="hero">
+    <div>
+      <div class="kicker">Whitepaper · v1 · November 2026</div>
+      <h1>Hamster Dash</h1>
+      <p class="lead">An endless runner built on top of Squeekchain, the blockchain powered by a real hamster on a real wheel. The course, the bonuses and the rewards in the game all come from live Squeekchain data, and the reward math uses the same rules as the chain.</p>
+    </div>
+    <div class="w"><canvas id="wheel" width="500" height="500" aria-label="A hamster running in its wheel"></canvas>
+      <div class="wheelcap" id="wheelcap">checking the real wheel…</div></div>
+  </div>
 
   <nav class="toc">
     <a href="#game">1. The game</a>
@@ -118,6 +135,8 @@
       <div>Seeds = work</div><i>→</i><div>Squeek block</div><i>→</i><div>SQK issued</div><i>→</i><div>Checkpoint flag</div><i>→</i><div>Staked</div>
     </div>
 
+    <canvas class="anim" id="econ" aria-label="Animation: seeds fill a Squeek block, the block issues SQK, a checkpoint flag stakes it"></canvas>
+    <div class="cap">Every seed is work. Enough work finishes a Squeek block, the block issues SQK as <i>pending</i>, and the next STAKE flag turns it into <i>staked</i>.</div>
     <h3>4.1 Work and blocks</h3>
     <p>On Squeekchain, every magnet pass on the wheel is one unit of work, and a Squeek block finishes when enough work is done at the current difficulty. In the game every seed is one unit of work (two while the real wheel is running), and the work needed per block comes straight from the chain:</p>
     <pre><code>work per block = workPerThousandBlocks / 1000   (live from /v1/core)</code></pre>
@@ -164,6 +183,8 @@ S = your Dash stake, P = Squeek power of your staked Squeeks</code></pre>
       <tr><td>Power</td><td>1,000</td><td>2,200</td><td>4,840</td><td>10,648</td><td>23,426</td></tr>
       <tr><td>Boost (one staked)</td><td>×2</td><td>×3.2</td><td>×5.84</td><td>×11.6</td><td>×24.4</td></tr>
     </table></div>
+    <canvas class="anim short" id="merge" aria-label="Animation: two Level 1 Squeeks merge into one Level 2 Squeek"></canvas>
+    <div class="cap">Two Level 1 Squeeks (1,000 power each) merge into one Level 2 Squeek with 2,200 power, 10% more than the pair.</div>
     <p>Each level has 2.2 times the power of the one below, so merging two Squeeks always gives a bit more boost than keeping the pair.</p>
   </section>
 
@@ -222,8 +243,197 @@ S = your Dash stake, P = Squeek power of your staked Squeeks</code></pre>
     .catch(() => set('lvReward', '≈ 3,674'));
   api('/v1/status').then(s => {
     const m = s.measurement || {};
-    set('lvWheel', m.coreStatus === 'ACTIVE' ? 'Running · ' + nf((+m.speedMmPerSecond || 0) / 1000) + ' m/s' : 'Idle');
+    const on = m.coreStatus === 'ACTIVE';
+    set('lvWheel', on ? 'Running · ' + nf((+m.speedMmPerSecond || 0) / 1000) + ' m/s' : 'Idle');
+    window.__wheelOn = on;
+    document.getElementById('wheelcap').innerHTML = on
+      ? '<b>Live:</b> the real hamster is running right now'
+      : 'The real wheel is idle right now. This one never stops.';
   }).catch(() => set('lvWheel', '–'));
+})();
+
+// ---------- hamster animations ----------
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SK = { n: { body:'#e8a25c', belly:'#fbe7c8', ear:'#d98c45', cheek:'#f7c08a' },
+               q: { body:'#2fbf9b', belly:'#d9fff3', ear:'#1f9a7c', cheek:'#8ff0d4' } };
+  const E = (c, x, y, rx, ry) => { c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); c.fill(); };
+  const C = (c, x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); };
+  // the same hamster as in the game; (x, y) = feet, r = size
+  function ham(c, x, y, r, t, o = {}) {
+    const sk = o.teal ? SK.q : SK.n, rate = o.rate || 30;
+    const run = o.run ? Math.sin(t * rate) : 0, bob = o.run ? Math.abs(Math.sin(t * rate)) * r * 0.08 : 0;
+    c.save(); c.translate(x, y - bob); if (o.rot) c.rotate(o.rot); if (o.sx) c.scale(o.sx, o.sy || 1);
+    c.fillStyle = sk.ear; E(c, -r * 1.12, -r * 0.95 + Math.sin(t * 12) * r * 0.06, r * 0.16, r * 0.11);
+    c.fillStyle = '#f4b6a6';
+    if (o.air) { E(c, -r * 0.3, -r * 0.2, r * 0.2, r * 0.12); E(c, r * 0.35, -r * 0.2, r * 0.2, r * 0.12); }
+    else { E(c, -r * 0.45 + run * r * 0.23, -r * 0.08, r * 0.22, r * 0.12); E(c, r * 0.45 - run * r * 0.23, -r * 0.08, r * 0.22, r * 0.12); }
+    c.fillStyle = sk.body; E(c, 0, -r * 0.9, r * 1.15, r * 0.9);
+    c.fillStyle = sk.belly; E(c, r * 0.35, -r * 0.7, r * 0.65, r * 0.55);
+    c.fillStyle = sk.ear; C(c, r * 0.25, -r * 1.7, r * 0.26); C(c, -r * 0.3, -r * 1.65, r * 0.24);
+    c.fillStyle = '#f4b6a6'; C(c, r * 0.25, -r * 1.7, r * 0.13);
+    const ch = o.cheek || 1; c.fillStyle = sk.cheek; E(c, r * 0.85, -r * 0.85, r * 0.3 * ch, r * 0.26 * ch);
+    if (o.teal) { c.fillStyle = '#eafff8'; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) if ((i + j) % 2 === 0) C(c, -r * 0.75 + i * r * 0.18, -r * 1.25 + j * r * 0.18, r * 0.05); }
+    c.fillStyle = '#1a0f08';
+    if ((t + (o.seed || 0)) % 3.3 < 0.12) c.fillRect(r * 0.62, -r * 1.2, r * 0.22, r * 0.05);
+    else { C(c, r * 0.72, -r * 1.2, r * 0.11); c.fillStyle = '#fff'; C(c, r * 0.75, -r * 1.24, r * 0.04); }
+    c.fillStyle = '#e46b7a'; C(c, r * 1.12, -r * 1.0, r * 0.07);
+    c.strokeStyle = '#2a1a0c88'; c.lineWidth = Math.max(1, r * 0.04); c.beginPath();
+    c.moveTo(r * 1.05, -r * 0.98); c.lineTo(r * 1.45, -r * 1.08); c.moveTo(r * 1.05, -r * 0.94); c.lineTo(r * 1.45, -r * 0.9); c.stroke();
+    c.restore();
+  }
+  function seed(c, x, y, s, gold) {
+    c.save(); c.translate(x, y); c.rotate(0.5);
+    c.fillStyle = gold ? '#ffd54a' : '#3a3633'; E(c, 0, 0, 6 * s, 11 * s);
+    c.strokeStyle = gold ? '#fff6c8' : '#f4ecd6'; c.lineWidth = 2 * s;
+    c.beginPath(); c.moveTo(0, -8 * s); c.lineTo(0, 8 * s); c.stroke(); c.restore();
+  }
+  const font = (px, w = 600) => `${w} ${px}px Fredoka, sans-serif`;
+  function fit(cv) { // match the canvas to its CSS size (crisp on retina)
+    const d = Math.min(2, devicePixelRatio || 1), w = cv.clientWidth, h = cv.clientHeight;
+    if (cv.width !== Math.round(w * d) || cv.height !== Math.round(h * d)) { cv.width = Math.round(w * d); cv.height = Math.round(h * d); }
+    const c = cv.getContext('2d'); c.setTransform(d, 0, 0, d, 0, 0); return [c, w, h];
+  }
+
+  // 1) hero: hamster in its wheel
+  const wheel = document.getElementById('wheel'); let ang = 0;
+  function drawWheel(t, dt) {
+    const [c, w, h] = fit(wheel); c.clearRect(0, 0, w, h);
+    const cx = w / 2, cy = h * 0.46, R = w * 0.4, on = window.__wheelOn;
+    ang += dt * (on ? 2.6 : 1.4);
+    c.strokeStyle = '#7a4a16'; c.lineWidth = w * 0.03; c.lineCap = 'round'; // stand
+    c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx - R * 0.55, h * 0.97); c.moveTo(cx, cy); c.lineTo(cx + R * 0.55, h * 0.97); c.stroke();
+    c.fillStyle = '#0005'; E(c, cx, h * 0.97, R * 0.8, w * 0.02);
+    c.strokeStyle = '#3a2a1e'; c.lineWidth = w * 0.012; // spokes
+    for (let i = 0; i < 6; i++) { const a = ang + i * Math.PI / 3; c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); c.stroke(); }
+    c.strokeStyle = '#c98a4a'; c.lineWidth = w * 0.022; // rims
+    c.beginPath(); c.arc(cx, cy, R, 0, Math.PI * 2); c.stroke();
+    c.strokeStyle = '#a86d35'; c.lineWidth = w * 0.012;
+    c.beginPath(); c.arc(cx, cy, R * 0.9, 0, Math.PI * 2); c.stroke();
+    c.strokeStyle = '#e0a868'; c.lineWidth = w * 0.01; // rungs
+    for (let i = 0; i < 30; i++) { const a = ang + i * Math.PI / 15; c.beginPath();
+      c.moveTo(cx + Math.cos(a) * R * 0.9, cy + Math.sin(a) * R * 0.9); c.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); c.stroke(); }
+    c.fillStyle = '#5fd3b5'; C(c, cx, cy, w * 0.03); // hub with a magnet, like the real one
+    c.fillStyle = '#e46b7a'; C(c, cx + Math.cos(ang) * R * 0.95, cy + Math.sin(ang) * R * 0.95, w * 0.018);
+    ham(c, cx, cy + R * 0.88, w * 0.1, t, { run: true, rate: on ? 34 : 22 });
+  }
+
+  // 2) economy loop: seeds → block → pending SQK → STAKE flag → staked
+  const econ = document.getElementById('econ');
+  const E2 = { items: [], next: 0, work: 0, block: 1, pend: 0, staked: 0, pops: [], flash: 0, hop: 0, vy: 0, y: 0, seeds: 0 };
+  const PER = 3674, WPB = 8.2;
+  function econStep(dt, w) {
+    const v = 150; E2.next -= v * dt;
+    while (E2.next <= 0) { // lay out the course ahead: arcs of seeds, a flag after every 16 seeds
+      E2.seeds++;
+      if (E2.seeds % 17 === 0) { E2.items.push({ x: w + 30 - E2.next, k: 'flag' }); E2.next += 120; }
+      else { const i = E2.seeds % 17; E2.items.push({ x: w + 30 - E2.next, k: 'seed', h: 18 + Math.sin(i / 4 * Math.PI) * 18 }); E2.next += 44; }
+    }
+    for (const it of E2.items) it.x -= v * dt;
+    E2.y += E2.vy * dt; E2.vy += 900 * dt; if (E2.y > 0) { E2.y = 0; E2.vy = 0; }
+    for (const it of E2.items) {
+      if (it.done || it.x > w * 0.2 + 10) continue;
+      it.done = true;
+      if (it.k === 'seed') {
+        E2.work += 1;
+        if (E2.work >= WPB) { E2.work -= WPB; E2.block++; E2.pend += PER; E2.flash = 0.6;
+          E2.pops.push({ x: w * 0.2 + 20, y: 70, t: 1.4, s: 'Block mined +3,674 SQK', col: '#ffd54a' }); }
+      } else {
+        if (E2.vy === 0) E2.vy = -260;
+        if (E2.pend) { E2.pops.push({ x: w * 0.2 + 30, y: 64, t: 1.6, s: `Staked ${E2.pend.toLocaleString('en')} SQK`, col: '#5fd3b5' }); E2.staked += E2.pend; E2.pend = 0; }
+      }
+    }
+    E2.items = E2.items.filter(it => it.x > -40);
+    for (const p of E2.pops) { p.t -= dt; p.y -= 22 * dt; }
+    E2.pops = E2.pops.filter(p => p.t > 0); E2.flash = Math.max(0, E2.flash - dt);
+  }
+  function drawEcon(t, dt) {
+    const [c, w, h] = fit(econ);
+    if (!E2.warm) { E2.warm = true; for (let i = 0; i < 150; i++) econStep(1 / 30, w); E2.pops = []; } // start mid-run, not empty
+    if (dt) econStep(dt, w);
+    c.clearRect(0, 0, w, h);
+    const g = h - 34;
+    c.fillStyle = '#5a3b22'; c.fillRect(0, g, w, h - g); c.fillStyle = '#6e4a2c'; c.fillRect(0, g, w, 5);
+    c.fillStyle = '#4a3020'; for (let x = (-t * 150) % 60; x < w; x += 60) c.fillRect(x, g + 14, 18, 3);
+    for (const it of E2.items) {
+      if (it.k === 'seed') { if (!it.done) seed(c, it.x, g - it.h - 14, 0.9); }
+      else {
+        c.fillStyle = '#d9c3a0'; c.fillRect(it.x - 2, g - 82, 4, 82);
+        c.fillStyle = '#5fd3b5'; c.beginPath(); c.moveTo(it.x + 2, g - 82); c.lineTo(it.x + 40, g - 72 + Math.sin(t * 6) * 2); c.lineTo(it.x + 2, g - 60); c.fill();
+        c.fillStyle = '#103a30'; c.font = font(9, 700); c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText('STAKE', it.x + 5, g - 71);
+      }
+    }
+    ham(c, w * 0.2, g + E2.y, 23, t, { run: E2.y === 0, air: E2.y < 0, cheek: 1 + (E2.work / WPB) * 0.5 });
+    // block bar + counters
+    c.textBaseline = 'middle'; c.textAlign = 'left'; c.font = font(13);
+    c.fillStyle = '#fbe9d0'; c.fillText('Block ' + E2.block, 14, 20);
+    c.fillStyle = '#ffffff22'; c.fillRect(74, 14, 110, 12);
+    c.fillStyle = E2.flash ? '#ffd54a' : '#5fd3b5'; c.fillRect(74, 14, 110 * Math.min(1, E2.work / WPB), 12);
+    c.textAlign = 'right'; c.fillStyle = '#ffd54a'; c.fillText(E2.pend ? 'pending ' + E2.pend.toLocaleString('en') : 'pending 0', w - 14, 20);
+    c.fillStyle = '#5fd3b5'; c.fillText('staked ' + E2.staked.toLocaleString('en'), w - 14, 40);
+    c.textAlign = 'center'; c.font = font(14, 700);
+    for (const p of E2.pops) { c.globalAlpha = Math.min(1, p.t * 2); c.fillStyle = '#0009'; c.fillText(p.s, p.x + 60 + 1, p.y + 1); c.fillStyle = p.col; c.fillText(p.s, p.x + 60, p.y); }
+    c.globalAlpha = 1;
+  }
+
+  // 3) merge: two Level 1 Squeeks become one Level 2
+  const merge = document.getElementById('merge');
+  function drawMerge(t) {
+    const [c, w, h] = fit(merge); c.clearRect(0, 0, w, h);
+    const g = h - 38, L = 4.2, k = (t % L) / L, cx = w / 2;
+    c.fillStyle = '#ffffff10'; c.fillRect(0, g, w, 2);
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    if (k < 0.32) { // walk together
+      const p = Math.min(1, k / 0.3), off = (1 - p) * w * 0.28 + 26;
+      ham(c, cx - off, g, 22, t, { teal: true, run: p < 1, rate: 24 });
+      ham(c, cx + off, g, 22, t, { teal: true, run: p < 1, rate: 24, sx: -1, seed: 1.3 });
+      c.font = font(13); c.fillStyle = '#cdb89c';
+      c.fillText('Level 1 · 1,000', cx - off, g + 20); c.fillText('Level 1 · 1,000', cx + off, g + 20);
+    } else if (k < 0.42) { // pop
+      const q = (k - 0.32) / 0.1;
+      c.fillStyle = `rgba(255,213,74,${1 - q})`; C(c, cx, g - 26, 20 + q * 60);
+      ham(c, cx, g, 22 + q * 8, t, { teal: true, sx: 1 + Math.sin(q * Math.PI) * 0.3, sy: 1 - Math.sin(q * Math.PI) * 0.25 });
+    } else { // the survivor, a level higher
+      const q = Math.min(1, (k - 0.42) / 0.12), hop = Math.max(0, Math.sin((k - 0.42) * 14)) * 10 * (1 - q * 0.6);
+      ham(c, cx, g - hop, 30, t, { teal: true, air: hop > 1 });
+      c.font = font(15, 700); c.fillStyle = '#5fd3b5'; c.fillText('Level 2 · 2,200 power', cx, g + 20);
+      c.globalAlpha = q; c.font = font(13); c.fillStyle = '#ffd54a'; c.fillText('+10% vs the pair · staking boost x3.2', cx, 22); c.globalAlpha = 1;
+    }
+  }
+
+  // 4) reading progress: a little hamster runs along the bar under the header
+  const runner = document.getElementById('runner'), prog = document.getElementById('prog');
+  let lastScroll = -1, movingT = 0, pr = 0;
+  function drawRunner(t, dt) {
+    const max = document.documentElement.scrollHeight - innerHeight, y = scrollY;
+    const target = max > 0 ? Math.min(1, y / max) : 0;
+    if (y !== lastScroll) { movingT = 0.25; lastScroll = y; } else movingT = Math.max(0, movingT - dt);
+    pr += (target - pr) * Math.min(1, dt * 10);
+    const tw = runner.parentElement.clientWidth;
+    prog.style.width = (pr * 100).toFixed(2) + '%';
+    runner.style.transform = `translateX(${Math.max(0, pr * tw - 30)}px)`;
+    const c = runner.getContext('2d'); c.setTransform(2, 0, 0, 2, 0, 0); c.clearRect(0, 0, 44, 30);
+    ham(c, 18, 28, 10, t, { run: movingT > 0, rate: 30 });
+  }
+
+  // one loop; only visible canvases are drawn
+  const vis = new Map();
+  const io = new IntersectionObserver(es => es.forEach(e => vis.set(e.target, e.isIntersecting)));
+  [wheel, econ, merge].forEach(el => io.observe(el));
+  let last = performance.now(), T = 0;
+  function frame(now) {
+    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now; T += dt;
+    if (vis.get(wheel)) drawWheel(T, dt);
+    if (vis.get(econ)) drawEcon(T, dt);
+    if (vis.get(merge)) drawMerge(T);
+    drawRunner(T, dt);
+    if (!reduce) requestAnimationFrame(frame);
+  }
+  if (reduce) { // still frames only
+    drawWheel(0, 0); for (let i = 0; i < 120; i++) econStep(1 / 30, econ.clientWidth); drawEcon(0, 0); drawMerge(3); drawRunner(0, 0);
+    addEventListener('scroll', () => drawRunner(0, 0), { passive: true });
+  } else requestAnimationFrame(frame);
+  addEventListener('resize', () => { last = performance.now(); });
 })();
 </script>
 </body>
