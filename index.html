@@ -355,7 +355,7 @@
   // ---------- drawing ----------
   function drawBg() {
     ctx.drawImage(bgLayer, 0, 0, W, H);
-    ctx.fillStyle = '#4a3525';
+    ctx.fillStyle = '#33251b';
     for (const h of hills) { ctx.beginPath(); ctx.ellipse(h.x, GROUND, h.w, h.h * S + 40, 0, Math.PI, 0); ctx.fill(); }
     ctx.strokeStyle = '#5c4230'; ctx.lineWidth = 3; ctx.lineCap = 'round';
     ctx.beginPath();
@@ -423,24 +423,44 @@
     }
   }
 
+  // hazards use colours that never appear in the burrow (rust-red thorns, grey stone, clay)
+  // and a dark outline so they pop against the brown ground and hills
+  const OUT = '#120a05';
   function drawObstacles() {
+    ctx.lineJoin = 'round';
     for (const o of obstacles) {
       if (o.kind === 'pebble') {
-        ctx.fillStyle = '#8f8a84'; ellipse(o.x + o.w / 2, GROUND - o.h / 2, o.w / 2, o.h / 2);
-        ctx.fillStyle = '#6f6a64'; ellipse(o.x + o.w * 0.6, GROUND - o.h * 0.3, o.w * 0.3, o.h * 0.22);
-        ctx.fillStyle = '#b3aea7'; ellipse(o.x + o.w * 0.36, GROUND - o.h * 0.68, o.w * 0.15, o.h * 0.11);
+        ctx.fillStyle = '#9d9892'; ctx.strokeStyle = OUT; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.ellipse(o.x + o.w / 2, GROUND - o.h / 2, o.w / 2, o.h / 2, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#76716b'; ellipse(o.x + o.w * 0.6, GROUND - o.h * 0.3, o.w * 0.3, o.h * 0.22);
+        ctx.fillStyle = '#d2cdc6'; ellipse(o.x + o.w * 0.36, GROUND - o.h * 0.68, o.w * 0.15, o.h * 0.11);
       } else if (o.kind === 'root') {
-        ctx.fillStyle = '#4b2f1c';
+        // thorny root: rust-red spike with pale thorns
+        const L = o.x - 6, R = o.x + o.w + 6, tipX = o.x + o.w * 0.45, tipY = GROUND - o.h;
         ctx.beginPath();
-        ctx.moveTo(o.x - 6, GROUND); ctx.quadraticCurveTo(o.x + o.w * 0.2, GROUND - o.h * 0.6, o.x + o.w * 0.45, GROUND - o.h);
-        ctx.quadraticCurveTo(o.x + o.w * 0.8, GROUND - o.h * 0.5, o.x + o.w + 6, GROUND); ctx.fill();
-        ctx.strokeStyle = '#2f1c10'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(o.x + o.w * 0.4, GROUND - o.h * 0.75); ctx.lineTo(o.x + o.w * 0.5, GROUND - o.h * 0.35); ctx.stroke();
+        ctx.moveTo(L, GROUND); ctx.quadraticCurveTo(o.x + o.w * 0.2, GROUND - o.h * 0.6, tipX, tipY);
+        ctx.quadraticCurveTo(o.x + o.w * 0.8, GROUND - o.h * 0.5, R, GROUND); ctx.closePath();
+        ctx.fillStyle = '#a63d2a'; ctx.fill();
+        ctx.strokeStyle = OUT; ctx.lineWidth = 2.5; ctx.stroke();
+        ctx.strokeStyle = '#d9694d'; ctx.lineWidth = 2;   // highlight
+        ctx.beginPath(); ctx.moveTo(o.x + o.w * 0.2, GROUND - 4); ctx.quadraticCurveTo(o.x + o.w * 0.25, GROUND - o.h * 0.5, tipX - 2, tipY + 8); ctx.stroke();
+        ctx.fillStyle = '#f3e2c7'; ctx.strokeStyle = OUT; ctx.lineWidth = 1.5; // thorns
+        for (let k = 0; k < 3; k++) {
+          const fy = 0.3 + k * 0.2, side = k % 2 ? 1 : -1;
+          const bx = o.x + o.w * (0.45 + side * (0.32 - fy * 0.25)), by = GROUND - o.h * fy;
+          ctx.beginPath(); ctx.moveTo(bx, by - 4 * S); ctx.lineTo(bx + side * 9 * S, by - 7 * S); ctx.lineTo(bx, by + 3 * S); ctx.closePath();
+          ctx.fill(); ctx.stroke();
+        }
+        ctx.beginPath(); ctx.arc(tipX, tipY + 2, 2.5 * S, 0, Math.PI * 2); ctx.fill();
       } else {
-        ctx.fillStyle = '#5a3a22';
-        ctx.beginPath(); ctx.ellipse(o.x + o.w / 2, GROUND, o.w / 2, o.h, 0, Math.PI, 0); ctx.fill();
-        ctx.fillStyle = '#6e4a2c';
-        for (let i = 0; i < 4; i++) ellipse(o.x + o.w * (0.25 + i * 0.17), GROUND - o.h * (0.45 + (i % 2) * 0.2), 3 * S, 2 * S);
+        // clay mound: orange clay with outline and stripes
+        ctx.beginPath(); ctx.ellipse(o.x + o.w / 2, GROUND, o.w / 2, o.h, 0, Math.PI, 0); ctx.closePath();
+        ctx.fillStyle = '#c4773a'; ctx.fill();
+        ctx.strokeStyle = OUT; ctx.lineWidth = 2.5; ctx.stroke();
+        ctx.strokeStyle = '#e39a57'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(o.x + o.w / 2, GROUND, o.w * 0.34, o.h * 0.66, 0, Math.PI * 1.1, Math.PI * 1.75); ctx.stroke();
+        ctx.fillStyle = '#8e4f22';
+        for (let k = 0; k < 4; k++) ellipse(o.x + o.w * (0.25 + k * 0.17), GROUND - o.h * (0.35 + (k % 2) * 0.2), 3 * S, 2 * S);
       }
     }
   }
