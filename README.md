@@ -14,11 +14,13 @@ Everything is read straight from the browser — **no wallet connection, no sign
 
 ## Controls
 - **Space / ↑ / W** or **tap** — hop; hold for a higher hop, press again mid-air for a double hop
+- **↓ / S** or the **⬇ button** on phones — duck (mid-air: fast fall)
 - **P / Esc** — pause · **M** — mute
 
 ## Gameplay
+- The menu shows a live preview: an autopilot plays the current round's course
 - Four areas that cross-fade every 150 m: The Burrow → Sunny Meadow → Sunset Hills → Night Forest (and around again)
-- Air enemies from 50 m: eagles in daylight, bats underground and at night — high flyers punish a jump, low flyers must be hopped; a red "!" warns before they arrive
+- Air enemies from 50 m: eagles in daylight, bats underground and at night — high flyers punish a jump, mid flyers must be ducked (or hopped), low flyers must be hopped; a red "!" warns before they arrive
 - Pebbles, roots, mounds and pebble pairs; spacing always leaves room for a full hop at the current speed
 - Golden seeds grant a one-hit shield; the hamster's cheeks grow as it eats
 - Coyote time + jump buffering for forgiving controls; milestones, score pop-ups, screen shake
