@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Hamster Dash</title>
+<meta name="description" content="Hamster Dash — a tiny endless runner. Help the hamster dash through the burrow, hop over pebbles and roots, and stuff its cheeks with sunflower seeds.">
+<!-- SQUEEKCHAIN_VERIFY: verification meta tag goes here -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐹</text></svg>">
+<style>
+  :root { --bg:#1b1410; --fg:#fbe9d0; --accent:#f2a33a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { height:100%; background:var(--bg); color:var(--fg);
+    font-family: ui-rounded, "Trebuchet MS", system-ui, sans-serif; overflow:hidden; }
+  #wrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
+  canvas { display:block; width:100%; height:100%; touch-action:none; }
+  #hud { position:fixed; top:12px; left:16px; right:16px; display:flex; justify-content:space-between;
+    font-weight:700; font-size:18px; pointer-events:none; text-shadow:0 2px 0 #0006; }
+  #overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; text-align:center; padding:16px; background:#1b1410cc; }
+  #overlay.hidden { display:none; }
+  h1 { font-size:clamp(36px, 8vw, 64px); color:var(--accent); letter-spacing:1px; }
+  p { max-width:420px; line-height:1.5; opacity:.9; }
+  button { font:inherit; font-size:20px; font-weight:700; padding:12px 28px; border:0; border-radius:999px;
+    background:var(--accent); color:#2a1a0c; cursor:pointer; }
+  button:active { transform:translateY(1px); }
+  footer { position:fixed; bottom:8px; width:100%; text-align:center; font-size:12px; opacity:.55; }
+  footer a { color:inherit; }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c"></canvas></div>
+<div id="hud"><span id="score">🌻 0</span><span id="best">Best 0</span></div>
+<div id="overlay">
+  <h1>🐹 Hamster Dash</h1>
+  <p id="msg">Dash through the burrow. <b>Tap / Space</b> to hop (twice for a double hop). Grab sunflower seeds, dodge pebbles and roots.</p>
+  <button id="play">Play</button>
+</div>
+<footer>Made with 🌻 · <a href="https://github.com/" id="src">source</a></footer>
+<script>
+(() => {
+  const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+  const $score = document.getElementById('score'), $best = document.getElementById('best');
+  const $ov = document.getElementById('overlay'), $msg = document.getElementById('msg'), $play = document.getElementById('play');
+
+  let W = 0, H = 0, DPR = 1, GROUND = 0, S = 1;
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    cv.width = W * DPR; cv.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    S = Math.max(0.6, Math.min(1.4, H / 600));
+    GROUND = H * 0.78;
+  }
+  addEventListener('resize', resize); resize();
+
+  let best = 0;
+  try { best = +localStorage.getItem('hd_best') || 0; } catch (e) {}
+  $best.textContent = 'Best ' + best;
+
+  const G = 2600, JUMP = 900;
+  let state = 'menu', t = 0, speed, dist, seeds, obstacles, pickups, particles, spawnIn, seedIn, hills;
+  const ham = { x: 0, y: 0, vy: 0, jumps: 0, r: 26, squash: 1 };
+
+  function reset() {
+    speed = 360; dist = 0; seeds = 0; obstacles = []; pickups = []; particles = [];
+    spawnIn = 1.2; seedIn = 0.6;
+    ham.x = W * 0.2; ham.y = GROUND; ham.vy = 0; ham.jumps = 0;
+    hills = Array.from({ length: 8 }, (_, i) => ({ x: i * 260, h: 40 + Math.random() * 70 }));
+  }
+  reset();
+
+  function hop() {
+    if (state !== 'play') return;
+    if (ham.jumps < 2) {
+      ham.vy = -JUMP * S * (ham.jumps ? 0.85 : 1);
+      ham.jumps++; ham.squash = 0.7;
+      puff(ham.x, ham.y, 6, '#c9a27a');
+    }
+  }
+  function start() { reset(); state = 'play'; $ov.classList.add('hidden'); }
+  function over() {
+    state = 'over';
+    const score = seeds * 10 + Math.floor(dist / 100);
+    if (score > best) { best = score; try { localStorage.setItem('hd_best', best); } catch (e) {} }
+    $best.textContent = 'Best ' + best;
+    $msg.innerHTML = `Bonk! Score <b>${score}</b> · 🌻 ${seeds} seeds · ${Math.floor(dist / 100)} m`;
+    $play.textContent = 'Again';
+    $ov.classList.remove('hidden');
+  }
+
+  addEventListener('keydown', e => {
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+      e.preventDefault();
+      state === 'play' ? hop() : start();
+    }
+  });
+  cv.addEventListener('pointerdown', e => { e.preventDefault(); hop(); });
+  $play.addEventListener('click', start);
+
+  function puff(x, y, n, col) {
+    for (let i = 0; i < n; i++) particles.push({ x, y, vx: (Math.random() - .5) * 240, vy: -Math.random() * 220, life: .5, col });
+  }
+
+  function spawnObstacle() {
+    const kind = Math.random() < 0.6 ? 'pebble' : 'root';
+    const w = (kind === 'pebble' ? 34 + Math.random() * 22 : 22) * S;
+    const h = (kind === 'pebble' ? 26 + Math.random() * 16 : 50 + Math.random() * 30) * S;
+    obstacles.push({ kind, x: W + 40, w, h });
+  }
+  function spawnSeeds() {
+    const n = 3 + (Math.random() * 3 | 0), high = Math.random() < 0.4;
+    for (let i = 0; i < n; i++)
+      pickups.push({ x: W + 40 + i * 38 * S, y: GROUND - (high ? 150 : 40) * S - Math.sin(i / (n - 1 || 1) * Math.PI) * 40 * S, got: false });
+  }
+
+  function update(dt) {
+    t += dt;
+    if (state !== 'play') return;
+    speed += dt * 9; dist += speed * dt;
+    const r = ham.r * S;
+
+    ham.vy += G * S * dt; ham.y += ham.vy * dt;
+    if (ham.y >= GROUND) { if (ham.jumps) ham.squash = 1.25; ham.y = GROUND; ham.vy = 0; ham.jumps = 0; }
+    ham.squash += (1 - ham.squash) * Math.min(1, dt * 10);
+
+    spawnIn -= dt;
+    if (spawnIn <= 0) { spawnObstacle(); spawnIn = Math.max(0.55, 1.5 - speed / 900) + Math.random() * 0.7; }
+    seedIn -= dt;
+    if (seedIn <= 0) { spawnSeeds(); seedIn = 1.6 + Math.random() * 1.4; }
+
+    const dx = speed * dt;
+    for (const o of obstacles) o.x -= dx;
+    for (const p of pickups) p.x -= dx;
+    obstacles = obstacles.filter(o => o.x + o.w > -50);
+    pickups = pickups.filter(p => p.x > -50 && !p.got);
+
+    // collisions (forgiving hitbox)
+    const hx = ham.x, hy = ham.y - r * 0.9;
+    for (const o of obstacles) {
+      const cx = Math.max(o.x, Math.min(hx, o.x + o.w)), cy = Math.max(GROUND - o.h, Math.min(hy, GROUND));
+      if ((hx - cx) ** 2 + (hy - cy) ** 2 < (r * 0.72) ** 2) { puff(hx, hy, 18, '#f2a33a'); over(); return; }
+    }
+    for (const p of pickups) {
+      if ((p.x - hx) ** 2 + (p.y - hy) ** 2 < (r + 10 * S) ** 2) { p.got = true; seeds++; puff(p.x, p.y, 4, '#ffe08a'); }
+    }
+    $score.textContent = '🌻 ' + (seeds * 10 + Math.floor(dist / 100));
+  }
+
+  function updateParticles(dt) {
+    for (const p of particles) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 600 * dt; p.life -= dt; }
+    particles = particles.filter(p => p.life > 0);
+  }
+
+  // ---------- drawing ----------
+  function drawBg() {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#3b2a1e'); g.addColorStop(1, '#22170f');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    // distant tunnel bumps (parallax)
+    ctx.fillStyle = '#4a3525';
+    const off = (dist * 0.25) % 260;
+    for (let i = 0; i < hills.length; i++) {
+      const hl = hills[i], x = hl.x - off;
+      ctx.beginPath(); ctx.ellipse(x, GROUND, 150, hl.h * S + 40, 0, Math.PI, 0); ctx.fill();
+    }
+    // ceiling roots
+    ctx.strokeStyle = '#5c4230'; ctx.lineWidth = 3;
+    const off2 = (dist * 0.5) % 120;
+    for (let x = -off2; x < W + 120; x += 120) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.quadraticCurveTo(x + 18, 40, x + 6, 70 + (x % 3) * 8); ctx.stroke();
+    }
+    // ground
+    ctx.fillStyle = '#6b4a2f'; ctx.fillRect(0, GROUND, W, H - GROUND);
+    ctx.fillStyle = '#7d5838'; ctx.fillRect(0, GROUND, W, 6 * S);
+    ctx.fillStyle = '#5a3d26';
+    const off3 = dist % 60;
+    for (let x = -off3; x < W; x += 60) ctx.fillRect(x, GROUND + 22 * S, 18, 4);
+  }
+
+  function drawHamster() {
+    const r = ham.r * S, x = ham.x, y = ham.y;
+    const run = state === 'play' && ham.jumps === 0 ? Math.sin(t * 28) : 0;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(1 / ham.squash, ham.squash);
+    // shadow
+    ctx.fillStyle = '#0005'; ctx.beginPath(); ctx.ellipse(0, 2, r * 1.1, r * 0.25, 0, 0, Math.PI * 2); ctx.fill();
+    // feet
+    ctx.fillStyle = '#f4b6a6';
+    ctx.beginPath(); ctx.ellipse(-r * 0.45 + run * 5, -r * 0.08, r * 0.22, r * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(r * 0.45 - run * 5, -r * 0.08, r * 0.22, r * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+    // body
+    ctx.fillStyle = '#e8a25c';
+    ctx.beginPath(); ctx.ellipse(0, -r * 0.9, r * 1.15, r * 0.9, 0, 0, Math.PI * 2); ctx.fill();
+    // belly
+    ctx.fillStyle = '#fbe7c8';
+    ctx.beginPath(); ctx.ellipse(r * 0.35, -r * 0.7, r * 0.65, r * 0.55, 0, 0, Math.PI * 2); ctx.fill();
+    // ears
+    ctx.fillStyle = '#d98c45';
+    ctx.beginPath(); ctx.arc(r * 0.25, -r * 1.7, r * 0.26, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-r * 0.3, -r * 1.65, r * 0.24, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#f4b6a6';
+    ctx.beginPath(); ctx.arc(r * 0.25, -r * 1.7, r * 0.13, 0, Math.PI * 2); ctx.fill();
+    // cheek (grows with seeds!)
+    const cheek = Math.min(1.6, 1 + seeds * 0.02);
+    ctx.fillStyle = '#f7c08a';
+    ctx.beginPath(); ctx.ellipse(r * 0.85, -r * 0.85, r * 0.3 * cheek, r * 0.26 * cheek, 0, 0, Math.PI * 2); ctx.fill();
+    // eye
+    ctx.fillStyle = '#1a0f08';
+    ctx.beginPath(); ctx.arc(r * 0.72, -r * 1.2, r * 0.11, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(r * 0.75, -r * 1.24, r * 0.04, 0, Math.PI * 2); ctx.fill();
+    // nose
+    ctx.fillStyle = '#e46b7a';
+    ctx.beginPath(); ctx.arc(r * 1.12, -r * 1.0, r * 0.07, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawObstacles() {
+    for (const o of obstacles) {
+      if (o.kind === 'pebble') {
+        ctx.fillStyle = '#8f8a84';
+        ctx.beginPath(); ctx.ellipse(o.x + o.w / 2, GROUND - o.h / 2, o.w / 2, o.h / 2, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#b3aea7';
+        ctx.beginPath(); ctx.ellipse(o.x + o.w * 0.38, GROUND - o.h * 0.68, o.w * 0.16, o.h * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+      } else {
+        ctx.fillStyle = '#4b2f1c';
+        ctx.beginPath();
+        ctx.moveTo(o.x, GROUND); ctx.quadraticCurveTo(o.x + o.w * 0.2, GROUND - o.h * 0.6, o.x + o.w * 0.45, GROUND - o.h);
+        ctx.quadraticCurveTo(o.x + o.w * 0.8, GROUND - o.h * 0.5, o.x + o.w, GROUND); ctx.fill();
+      }
+    }
+  }
+
+  function drawPickups() {
+    for (const p of pickups) {
+      const bob = Math.sin(t * 6 + p.x * 0.05) * 3;
+      ctx.save(); ctx.translate(p.x, p.y + bob); ctx.rotate(0.5);
+      ctx.fillStyle = '#2b2b2b'; ctx.beginPath(); ctx.ellipse(0, 0, 6 * S, 11 * S, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#e9e2cf'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, -9 * S); ctx.lineTo(0, 9 * S); ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawParticles() {
+    for (const p of particles) { ctx.globalAlpha = Math.max(0, p.life * 2); ctx.fillStyle = p.col; ctx.fillRect(p.x, p.y, 4, 4); }
+    ctx.globalAlpha = 1;
+  }
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.033, (now - last) / 1000); last = now;
+    update(dt); updateParticles(dt);
+    drawBg(); drawPickups(); drawObstacles(); drawHamster(); drawParticles();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
