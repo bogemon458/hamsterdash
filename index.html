@@ -58,6 +58,14 @@
     background:#0b1210; color:var(--fg); user-select:text; }
   #own button { font-size:14px; padding:8px 14px; background:var(--sq); box-shadow:0 3px 0 #2c8a72; }
   #ownmsg { margin-top:6px; font-size:12px; opacity:.85; min-height:1em; }
+  #live { width:100%; max-width:440px; display:flex; align-items:center; gap:12px; text-align:left; font-size:14px;
+    border:1px solid #f2a33a55; border-radius:14px; padding:10px 14px; background:#2a1a0ccc; }
+  #live .dot { width:12px; height:12px; border-radius:50%; background:#777; flex:none; }
+  #live.on .dot { background:#5fd3b5; box-shadow:0 0 0 0 #5fd3b5; animation:pulse 1.2s infinite; }
+  #live b { color:var(--accent); }
+  #course { font-size:13px; opacity:.85; max-width:440px; }
+  @keyframes pulse { 0% { box-shadow:0 0 0 0 #5fd3b5aa; } 100% { box-shadow:0 0 0 10px #5fd3b500; } }
+  #hudlive { font-size:12px; font-weight:600; color:var(--sq); }
   footer { position:fixed; bottom:8px; width:100%; text-align:center; font-size:12px; opacity:.55; pointer-events:none; }
   footer a { color:inherit; pointer-events:auto; }
 </style>
@@ -66,17 +74,19 @@
 <canvas id="c"></canvas>
 <div id="hud">
   <span id="score">0</span>
-  <span id="round" title="Current Squeekchain round (Sepolia)"></span>
+  <span id="round" title="Current Squeekchain round — every round deals a new course"></span>
   <span class="r"><span id="best">Best 0</span><button id="mute" aria-label="Toggle sound">Sound on</button></span>
 </div>
 <div id="overlay">
   <div class="sub">A Squeekchain community game</div>
   <h1>Hamster Dash</h1>
-  <p id="msg">Dash through the burrow, hop the pebbles and roots, and stuff your cheeks with seeds. Golden seeds give a one-hit shield.</p>
+  <p id="msg">Race the real Squeekchain hamster. Every Squeekchain round deals a new course — the same one for every player — and whenever the real hamster is on its wheel, your seeds count double.</p>
+  <div id="live"><span class="dot"></span><span id="livetxt">Checking on the real hamster…</span></div>
+  <div id="course"></div>
   <button id="play">Play</button>
   <div class="keys">Tap / Space to hop · hold for higher · tap again mid-air for a double hop · P to pause · M to mute</div>
   <section id="sq" aria-live="polite">
-    <h2>Live from Squeekchain <small id="sqnet">loading…</small></h2>
+    <h2>Squeekchain economy <small id="sqnet">loading…</small></h2>
     <div id="stats"></div>
     <div id="own">
       <b>Got a Squeek?</b> Paste a wallet address — read-only, nothing to connect or sign.
@@ -92,7 +102,7 @@
   const cv = document.getElementById('c'), ctx = cv.getContext('2d', { alpha: false });
   const $score = document.getElementById('score'), $best = document.getElementById('best');
   const $ov = document.getElementById('overlay'), $msg = document.getElementById('msg'), $play = document.getElementById('play');
-  const $mute = document.getElementById('mute');
+  const $mute = document.getElementById('mute'), $round = document.getElementById('round');
 
   // ---------- layout ----------
   let ready = false;
@@ -130,6 +140,30 @@
     set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
   };
   let best = +store.get('hd_best') || 0;
+
+  // ---------- Squeekchain rounds drive the course ----------
+  // Round clock from Squeekchain core config (GET /v1/core): genesisTimestamp + roundDuration.
+  // Each round seeds a deterministic RNG, so everyone playing during the same round gets the same course.
+  const ROUND = { genesis: 1793735400, duration: 600 };
+  const roundNow = () => Math.floor((Date.now() / 1000 - ROUND.genesis) / ROUND.duration) + 1;
+  const roundLeft = () => ROUND.duration - Math.floor((Date.now() / 1000 - ROUND.genesis) % ROUND.duration);
+  function hashStr(str) {
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (let i = 0; i < str.length; i++) { const c = str.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    return h1 >>> 0;
+  }
+  function mulberry32(a) {
+    return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  }
+  let rng = Math.random, courseRound = 0;
+
+  // ---------- the real hamster (GET /v1/status → measurement) ----------
+  // coreStatus ACTIVE = the hamster is on the wheel right now. speedMmPerSecond / rpmMilli are live wheel readings.
+  const live = { status: 'UNKNOWN', speed: 0, rpm: 0, fresh: false };
+  const wheelOn = () => live.fresh && live.status === 'ACTIVE';
+  let wheelMm = 0, wheelSeen = false; // real hamster distance accumulated during the current run
 
   // ---------- sound (synthesized, no files) ----------
   let actx = null, muted = store.get('hd_mute') === '1';
@@ -173,7 +207,10 @@
     squeek: { body:'#2fbf9b', belly:'#d9fff3', ear:'#1f9a7c', cheek:'#8ff0d4', tail:'#1f9a7c' },
   };
 
+  const speedAt = d => Math.min(980, Math.sqrt(360 * 360 + 18 * d)); // speed is a function of distance → same course timing on every device
   function reset() {
+    courseRound = roundNow(); rng = mulberry32(hashStr('hamsterdash/round/' + courseRound));
+    wheelMm = 0; wheelSeen = false;
     speed = 360; dist = 0; seeds = 0; obstacles = []; pickups = []; particles = []; popups = [];
     nextObstacleAt = 700; nextSeedsAt = 400; nextMile = 100; banner = null; shield = false;
     shake = 0; flash = 0; sinceGround = 0; bufferT = 0;
@@ -227,28 +264,29 @@
   // ---------- spawning (gaps always clearable at current speed) ----------
   function airtime() { return 2 * JUMP / G; } // seconds of a full single hop (S cancels out)
   function spawnObstacle() {
-    const roll = Math.random(), d = Math.min(1, dist / 12000);
+    const roll = rng(), d = Math.min(1, dist / 12000);
     let kind = roll < 0.45 ? 'pebble' : roll < 0.75 ? 'root' : roll < 0.9 - d * 0.1 ? 'mound' : 'pair';
     const make = (k, x) => {
-      if (k === 'pebble') return { kind: k, x, w: (32 + Math.random() * 20) * S, h: (24 + Math.random() * 14) * S, seed: Math.random() };
-      if (k === 'root')   return { kind: k, x, w: 36 * S, h: (52 + Math.random() * 28 + d * 20) * S, seed: Math.random() };
-      return { kind: 'mound', x, w: (70 + Math.random() * 30) * S, h: (30 + Math.random() * 10) * S, seed: Math.random() };
+      if (k === 'pebble') return { kind: k, x, w: (32 + rng() * 20) * S, h: (24 + rng() * 14) * S, seed: rng() };
+      if (k === 'root')   return { kind: k, x, w: 36 * S, h: (52 + rng() * 28 + d * 20) * S, seed: rng() };
+      return { kind: 'mound', x, w: (70 + rng() * 30) * S, h: (30 + rng() * 10) * S, seed: rng() };
     };
     if (kind === 'pair') {
       obstacles.push(make('pebble', W + 40));
-      obstacles.push(make('pebble', W + 40 + (60 + Math.random() * 30) * S));
+      obstacles.push(make('pebble', W + 40 + (60 + rng() * 30) * S));
     } else obstacles.push(make(kind, W + 40));
     // minimum gap = distance covered during one hop + margin, so there is always room to land and hop again
     const minGap = speed * airtime() * 1.05 + 60 * S;
-    nextObstacleAt = dist + minGap + Math.random() * Math.max(120, 520 - d * 300) * S;
+    nextObstacleAt = dist + minGap + rng() * Math.max(120, 520 - d * 300) * S;
   }
   function spawnSeeds() {
-    const n = 3 + (Math.random() * 4 | 0), high = Math.random() < 0.45;
-    const golden = !shield && Math.random() < 0.12 ? (Math.random() * n | 0) : -1;
+    const n = 3 + (rng() * 4 | 0), high = rng() < 0.45;
+    const gRoll = rng(), gIdx = rng() * n | 0; // always draw both so the course stays identical for everyone
+    const golden = !shield && gRoll < 0.12 ? gIdx : -1;
     for (let i = 0; i < n; i++)
       pickups.push({ x: W + 40 + i * 38 * S, y: GROUND - (high ? 150 : 42) * S - Math.sin(i / (n - 1 || 1) * Math.PI) * 40 * S,
         gold: i === golden, got: false });
-    nextSeedsAt = dist + 500 + Math.random() * 600;
+    nextSeedsAt = dist + 500 + rng() * 600;
   }
 
   function puff(x, y, n, col) {
@@ -281,7 +319,8 @@
     if (banner) { banner.life -= dt; if (banner.life <= 0) banner = null; }
     if (state !== 'play') return;
 
-    speed = Math.min(980, speed + dt * 9); dist += speed * dt;
+    speed = speedAt(dist); dist += speed * dt;
+    if (wheelOn()) { wheelMm += live.speed * dt; wheelSeen = true; }
     const r = ham.r * S;
 
     // physics: lower gravity while holding on the way up = higher jump
@@ -322,8 +361,8 @@
         p.got = true;
         if (p.gold) { shield = true; sfx.gold(); popup(p.x, p.y - 10, 'Shield', '#ffd54a'); puff(p.x, p.y, 10, '#ffd54a'); }
         else {
-          const v = perks.sqk ? 2 : 1; seeds += v; sfx.seed();
-          popup(p.x, p.y - 10, '+' + v * 10, perks.sqk ? '#5fd3b5' : '#ffe08a'); puff(p.x, p.y, 4, '#ffe08a');
+          const v = (perks.sqk ? 2 : 1) * (wheelOn() ? 2 : 1); seeds += v; sfx.seed();
+          popup(p.x, p.y - 10, '+' + v * 10, v > 1 ? '#5fd3b5' : '#ffe08a'); puff(p.x, p.y, 4, '#ffe08a');
         }
       }
     }
@@ -345,8 +384,14 @@
     if (isBest) { best = s; store.set('hd_best', best); renderBest(); }
     setTimeout(() => {
       if (state !== 'over') return; // already restarted
+      const rk = 'hd_round_' + courseRound, rb = Math.max(s, +store.get(rk) || 0); store.set(rk, rb);
+      const realM = wheelMm / 1000;
+      const race = wheelSeen
+        ? `The real hamster ran <b>${realM.toFixed(1)} m</b> on its wheel during your run.`
+        : 'The real hamster was resting during your run.';
       $msg.innerHTML = (isBest ? '<b>New best!</b><br>' : '') +
-        `Score <b>${s}</b> · ${seeds} seeds · ${Math.floor(dist / 100)} m`;
+        `Score <b>${s}</b> · ${seeds} seeds · ${Math.floor(dist / 100)} m<br>` +
+        `Round #${courseRound} course · your best this round: <b>${rb}</b><br>${race}`;
       $play.textContent = 'Again';
       $ov.classList.remove('hidden'); $ov.scrollTop = 0;
     }, 550); // let the bonk play out before the menu covers it
@@ -357,6 +402,7 @@
     ctx.drawImage(bgLayer, 0, 0, W, H);
     ctx.fillStyle = '#33251b';
     for (const h of hills) { ctx.beginPath(); ctx.ellipse(h.x, GROUND, h.w, h.h * S + 40, 0, Math.PI, 0); ctx.fill(); }
+    drawGhost();
     ctx.strokeStyle = '#5c4230'; ctx.lineWidth = 3; ctx.lineCap = 'round';
     ctx.beginPath();
     for (const rt of roots) { ctx.moveTo(rt.x, 0); ctx.quadraticCurveTo(rt.x + rt.bend, rt.len * 0.6, rt.x + 4, rt.len); }
@@ -367,6 +413,31 @@
     const off2 = (dist * 1.3) % 90;
     ctx.fillStyle = '#4e3421';
     for (let x = -off2; x < W; x += 90) ctx.fillRect(x + 30, GROUND + 48 * S, 10, 3);
+  }
+
+  // the real Squeekchain hamster, drawn as a translucent "LIVE" ghost on the far ridge:
+  // runs at its real wheel speed when ACTIVE, sleeps when IDLE
+  function drawGhost() {
+    if (!live.fresh) return;
+    const r = 18 * S, gy = GROUND - 70 * S;
+    const on = wheelOn(), sp = Math.min(3, live.speed / 300);
+    const gx = W * 0.62 + (on ? Math.sin(t * 0.6) * 40 * S : 0);
+    ctx.save(); ctx.globalAlpha = 0.55;
+    ctx.fillStyle = '#5fd3b5';
+    const step = on ? Math.sin(t * (10 + sp * 12)) : 0;
+    ellipse(gx - r * 0.45 + step * 4, gy - r * 0.08, r * 0.22, r * 0.12);
+    ellipse(gx + r * 0.45 - step * 4, gy - r * 0.08, r * 0.22, r * 0.12);
+    ellipse(gx, gy - r * (on ? 0.9 : 0.6), r * 1.15, r * (on ? 0.9 : 0.6));
+    circle(gx + r * 0.25, gy - r * (on ? 1.7 : 1.2), r * 0.26);
+    ctx.fillStyle = '#0f1a17';
+    if (on) circle(gx + r * 0.72, gy - r * 1.2, r * 0.1);
+    else ctx.fillRect(gx + r * 0.55, gy - r * 0.8, r * 0.25, r * 0.06);
+    ctx.globalAlpha = 0.9; ctx.fillStyle = '#5fd3b5';
+    ctx.font = `600 ${Math.round(11 * S)}px Fredoka, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(on ? `LIVE · ${(live.speed / 1000).toFixed(2)} m/s` : 'LIVE · resting', gx, gy - r * 2.6);
+    if (!on) { ctx.font = `600 ${Math.round(14 * S)}px Fredoka, sans-serif`;
+      ctx.fillText('z', gx + r * 1.3, gy - r * 1.4 - Math.sin(t * 2) * 3); ctx.fillText('z', gx + r * 1.8, gy - r * 2 - Math.sin(t * 2 + 1) * 3); }
+    ctx.restore();
   }
 
   function ellipse(x, y, rx, ry) { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); }
@@ -514,6 +585,43 @@
     }
   }
 
+  // ---------- live hamster + round clock UI ----------
+  const $live = document.getElementById('live'), $livetxt = document.getElementById('livetxt'), $course = document.getElementById('course');
+  async function loadCore() { // round timing from the chain config
+    try {
+      const c = await (await fetch('https://api.squeekchain.com/v1/core', { cache: 'no-store' })).json();
+      const g = +c.configuration?.genesisTimestamp, d = +c.configuration?.roundDuration;
+      if (g > 0 && d > 0) { ROUND.genesis = g; ROUND.duration = d; }
+    } catch (e) {}
+  }
+  async function loadLive() {
+    if (document.hidden) return;
+    try {
+      const st = await (await fetch('https://api.squeekchain.com/v1/status', { cache: 'no-store' })).json();
+      const m = st.measurement || {};
+      live.status = m.coreStatus || 'UNKNOWN';
+      live.speed = Math.max(0, +m.speedMmPerSecond || 0);
+      live.rpm = Math.max(0, (+m.rpmMilli || 0) / 1000);
+      live.fresh = m.freshness === 'online';
+    } catch (e) { live.fresh = false; }
+    renderLive();
+  }
+  function renderLive() {
+    const on = wheelOn();
+    $live.classList.toggle('on', on);
+    $livetxt.innerHTML = !live.fresh ? 'The real hamster’s wheel feed is offline right now.'
+      : on ? `<b>The real hamster is running!</b> ${(live.speed / 1000).toFixed(2)} m/s · ${live.rpm.toFixed(0)} rpm — seeds count <b>double</b> right now.`
+      : 'The real hamster is resting. Seeds count double the moment it hops back on its wheel.';
+  }
+  const mmss = n => Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0');
+  function tickClock() {
+    const r = roundNow(), left = roundLeft();
+    $round.innerHTML = `<span class="long">Squeekchain </span>round ${r} · ${mmss(left)}` + (wheelOn() ? ' · <span id="hudlive">wheel x2</span>' : '');
+    $course.textContent = `Course for round #${r} — same for every player, new course in ${mmss(left)}. Your best this round: ${+store.get('hd_round_' + r) || 0}`;
+  }
+  loadCore().then(tickClock); loadLive();
+  setInterval(loadLive, 5000); setInterval(tickClock, 1000);
+
   // ---------- Squeekchain (read-only) ----------
   // Live economy: Squeekchain public API. Ownership: eth_call balanceOf on the Squeekchain
   // contracts on Sepolia. No wallet connection, no signatures, no transactions.
@@ -524,7 +632,7 @@
     token: '0xd78a3956cf63164d1fa1c622ad3c66623162fa1e',      // SQK token
   };
   const $stats = document.getElementById('stats'), $net = document.getElementById('sqnet');
-  const $round = document.getElementById('round'), $ownmsg = document.getElementById('ownmsg');
+  const $ownmsg = document.getElementById('ownmsg');
   const $addr = document.getElementById('addr');
   const fmt = n => Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 2 }).format(n);
   const units = (v, d = 18) => { try { return Number(BigInt(v) / 10n ** BigInt(d - 4)) / 1e4; } catch (e) { return NaN; } };
@@ -539,16 +647,13 @@
       const d = s.asset?.decimals ?? 18, sym = s.asset?.symbol || 'SQK';
       if (s.asset?.address) SQ.token = s.asset.address;
       const rows = [
-        ['Round', '#' + (s.lifecycle?.currentRound ?? s.capabilities?.core?.currentRound ?? '?')],
-        ['Mining', s.capabilities?.mining?.phase || s.lifecycle?.stage || '?'],
+        ['Settled on-chain round', '#' + (s.lifecycle?.currentRound ?? s.capabilities?.core?.currentRound ?? '?')],
         [sym + ' live supply', fmt(units(s.supply?.liveSupplyBaseUnits, d))],
         [sym + ' staked', fmt(units(s.staking?.totalStakedBaseUnits, d))],
         ['Squeeks alive', s.nft?.live ? fmt(+s.nft.live) : '?'],
-        ['Squeeks merged away', s.nft?.burned ? fmt(+s.nft.burned) : '?'],
       ];
       $stats.innerHTML = rows.map(([k, v]) => `<div><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join('');
       $net.textContent = (s.chain?.target || 'sepolia') + ' · block ' + (s.chain?.safeThroughBlock || '?');
-      $round.innerHTML = '<span class="long">Squeekchain </span>round ' + esc(s.lifecycle?.currentRound ?? '');
     } catch (e) {
       $net.textContent = 'offline — retrying';
     }

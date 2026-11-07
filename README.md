@@ -1,16 +1,16 @@
 # 🐹 Hamster Dash
 
-A Squeekchain community game: a tiny, dependency-free HTML5 endless runner. Help the hamster dash through the burrow, hop over pebbles and roots, and stuff its cheeks with sunflower seeds (they really do get bigger).
+A Squeekchain community game: a tiny, dependency-free HTML5 endless runner where you race the real Squeekchain hamster. Help the hamster dash through the burrow, hop over pebbles and roots, and stuff its cheeks with sunflower seeds (they really do get bigger).
 
-## Squeekchain integration (read-only)
-Hamster Dash reads Squeekchain live, straight from the browser — **no wallet connection, no signatures, no transactions**.
+## How Squeekchain powers the game
+Everything is read straight from the browser — **no wallet connection, no signatures, no transactions**.
 
-- **Live from Squeekchain panel** — fetches [`api.squeekchain.com/v1/economy/state`](https://api.squeekchain.com/v1/economy/state) every minute and shows the current round, mining phase, SQK live supply, SQK staked, Squeeks alive and Squeeks merged away. The current round is also shown in the in-game HUD.
-- **Got a Squeek?** — paste any wallet address (or open `https://hamsterdash.site/?address=0x…`). The game calls `balanceOf` on the Squeekchain contracts on Sepolia via a public RPC:
+- **Race the real hamster.** The game polls [`/v1/status`](https://api.squeekchain.com/v1/status) every 5 s. When the real Squeekchain hamster is on its wheel (`coreStatus: ACTIVE`), **every seed you grab counts double** and a translucent "LIVE" ghost hamster runs along the far ridge at the wheel's real speed (`speedMmPerSecond`). When it rests (`IDLE`), the ghost sleeps. At game over you see how far the real hamster ran on its wheel during your run.
+- **Every round deals a new course.** The round clock comes from the core config ([`/v1/core`](https://api.squeekchain.com/v1/core): `genesisTimestamp`, `roundDuration` = 10 min). The current round number seeds a deterministic RNG, so every player gets the same obstacle and seed sequence for that round, and a fresh course when the round rolls over. Your best score per round is tracked.
+- **Got a Squeek?** Paste any wallet address (or open `https://hamsterdash.site/?address=0x…`). The game calls `balanceOf` on the Squeekchain contracts on Sepolia via a public RPC:
   - Squeek collection `0xc4c7982657f00509548f3a3a41db7fa439a6856b` → holders unlock the teal **Squeek skin** with an LED-dot badge.
-  - SQK token `0xd78a3956cf63164d1fa1c622ad3c66623162fa1e` → holders' seeds count **double**.
-
-**Play:** https://hamsterdash.site
+  - SQK token `0xd78a3956cf63164d1fa1c622ad3c66623162fa1e` → holders' seeds count double (stacks with the live wheel bonus).
+- **Economy panel** from [`/v1/economy/state`](https://api.squeekchain.com/v1/economy/state): settled on-chain round, SQK live supply and staked, Squeeks alive.
 
 ## Controls
 - **Space / ↑ / W** or **tap** — hop; hold for a higher hop, press again mid-air for a double hop
