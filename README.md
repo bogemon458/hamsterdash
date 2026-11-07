@@ -13,7 +13,15 @@ Hamster Dash reads Squeekchain live, straight from the browser — **no wallet c
 **Play:** https://hamsterdash.site
 
 ## Controls
-- **Space / ↑ / W** or **tap** — hop (press again mid-air for a double hop)
+- **Space / ↑ / W** or **tap** — hop; hold for a higher hop, press again mid-air for a double hop
+- **P / Esc** — pause · **M** — mute
+
+## Gameplay
+- Pebbles, roots, mounds and pebble pairs; spacing always leaves room for a full hop at the current speed
+- Golden seeds grant a one-hit shield; the hamster's cheeks grow as it eats
+- Coyote time + jump buffering for forgiving controls; milestones, score pop-ups, screen shake
+- Synthesized sound effects (Web Audio, no asset files); best score saved locally
+- Performance: cached background layer, DOM only touched when the score changes, resolution capped on phones, auto-pause when the tab is hidden
 
 ## Run locally
 Just open `index.html` in a browser — no build step, no backend.
