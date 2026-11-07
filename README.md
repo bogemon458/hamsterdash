@@ -20,3 +20,5 @@ Just open `index.html` in a browser — no build step, no backend.
 
 ## License
 MIT
+
+squeekchain-project: 478ab808-9282-4b50-b1b0-4aa3b852f280
