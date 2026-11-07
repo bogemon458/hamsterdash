@@ -18,7 +18,7 @@
     font-family: "Fredoka", ui-rounded, "Trebuchet MS", system-ui, sans-serif; overflow:hidden;
     -webkit-tap-highlight-color: transparent; user-select:none; }
   canvas { position:fixed; inset:0; display:block; width:100%; height:100%; touch-action:none; }
-  #hud { position:fixed; top:12px; left:16px; right:16px; display:flex; justify-content:space-between; align-items:center;
+  #hud { z-index:5; position:fixed; top:12px; left:16px; right:16px; display:flex; justify-content:space-between; align-items:center;
     font-weight:700; font-size:20px; pointer-events:none; text-shadow:0 2px 0 #0008; gap:12px; }
   #hud .r { display:flex; gap:12px; align-items:center; }
   #round { color:var(--sq); font-size:14px; font-weight:600; letter-spacing:.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
@@ -32,17 +32,36 @@
   #mute { pointer-events:auto; font:inherit; font-size:14px; padding:4px 10px; border-radius:8px; border:1px solid #fbe9d044;
     background:#0006; color:var(--fg); cursor:pointer; }
   #overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:safe center;
-    gap:14px; text-align:center; padding:56px 16px 40px; background:#1b1410d9; overflow-y:auto; }
+    gap:16px; text-align:center; padding:24px 16px 48px; overflow-y:auto;
+    background:radial-gradient(ellipse at 50% 35%, #3a2616f2 0%, #1b1410f7 70%); }
   #overlay.hidden { display:none; }
-  .sub { font-size:13px; letter-spacing:3px; text-transform:uppercase; color:var(--sq); font-weight:600; }
-  h1 { font-size:clamp(40px, 9vw, 72px); line-height:1; color:var(--accent); font-weight:700;
-    text-shadow:0 4px 0 #7a4a16; }
-  p { max-width:440px; line-height:1.5; opacity:.92; }
-  #msg b { color:var(--accent); }
-  .keys { font-size:13px; opacity:.6; }
-  button { font:inherit; font-size:22px; font-weight:700; padding:12px 34px; border:0; border-radius:999px;
-    background:var(--accent); color:#2a1a0c; cursor:pointer; box-shadow:0 4px 0 #9c5d17; }
-  button:active { transform:translateY(2px); box-shadow:0 2px 0 #9c5d17; }
+  .card { display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; max-width:480px; }
+  .logo { width:110px; height:92px; filter:drop-shadow(0 6px 0 #0006); animation:bob 1.6s ease-in-out infinite; }
+  @keyframes bob { 50% { transform:translateY(-6px) rotate(-3deg); } }
+  .sub { font-size:12px; letter-spacing:3px; text-transform:uppercase; color:var(--sq); font-weight:600; }
+  h1 { font-size:clamp(44px, 10vw, 76px); line-height:.95; color:var(--accent); font-weight:700; text-shadow:0 5px 0 #7a4a16; }
+  .tag { font-size:18px; line-height:1.45; opacity:.95; max-width:420px; }
+  .tag b { color:var(--accent); }
+  .tag small { display:block; font-size:14px; opacity:.8; margin-top:4px; }
+  .big { font-size:48px; font-weight:700; color:var(--fg); line-height:1; display:block; margin:2px 0 6px; }
+  button { font:inherit; font-size:24px; font-weight:700; padding:12px 44px; border:0; border-radius:999px;
+    background:var(--accent); color:#2a1a0c; cursor:pointer; box-shadow:0 5px 0 #9c5d17; margin-top:4px; }
+  button:active { transform:translateY(3px); box-shadow:0 2px 0 #9c5d17; }
+  .chips { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:6px; }
+  .chip { display:inline-flex; align-items:center; gap:7px; font-size:13px; font-weight:600; padding:6px 12px; border-radius:999px;
+    background:#ffffff10; border:1px solid #ffffff1f; white-space:nowrap; }
+  .chip .dot { width:8px; height:8px; border-radius:50%; background:#8a7a6a; }
+  .chip.on { background:#5fd3b522; border-color:#5fd3b588; color:#bff5e6; }
+  .chip.on .dot { background:var(--sq); animation:pulse 1.2s infinite; }
+  @keyframes pulse { 0% { box-shadow:0 0 0 0 #5fd3b5aa; } 100% { box-shadow:0 0 0 8px #5fd3b500; } }
+  .hint { font-size:13px; opacity:.55; }
+  #more { width:100%; max-width:440px; text-align:left; }
+  #more summary { cursor:pointer; font-size:13px; opacity:.7; text-align:center; list-style:none; padding:6px; }
+  #more summary::-webkit-details-marker { display:none; }
+  #more summary::after { content:" ▾"; }
+  #more[open] summary::after { content:" ▴"; }
+  #more #sq { margin-top:8px; }
+  body:not(.playing) #score, body:not(.playing) #round { visibility:hidden; }
   #sq { width:100%; max-width:440px; border:1px solid #5fd3b555; border-radius:14px; padding:12px 14px; text-align:left;
     background:#0f1a17cc; font-size:14px; }
   #sq h2 { font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--sq); margin-bottom:8px;
@@ -58,13 +77,6 @@
     background:#0b1210; color:var(--fg); user-select:text; }
   #own button { font-size:14px; padding:8px 14px; background:var(--sq); box-shadow:0 3px 0 #2c8a72; }
   #ownmsg { margin-top:6px; font-size:12px; opacity:.85; min-height:1em; }
-  #live { width:100%; max-width:440px; display:flex; align-items:center; gap:12px; text-align:left; font-size:14px;
-    border:1px solid #f2a33a55; border-radius:14px; padding:10px 14px; background:#2a1a0ccc; }
-  #live .dot { width:12px; height:12px; border-radius:50%; background:#777; flex:none; }
-  #live.on .dot { background:#5fd3b5; box-shadow:0 0 0 0 #5fd3b5; animation:pulse 1.2s infinite; }
-  #live b { color:var(--accent); }
-  #course { font-size:13px; opacity:.85; max-width:440px; }
-  @keyframes pulse { 0% { box-shadow:0 0 0 0 #5fd3b5aa; } 100% { box-shadow:0 0 0 10px #5fd3b500; } }
   #hudlive { font-size:12px; font-weight:600; color:var(--sq); }
   footer { position:fixed; bottom:8px; width:100%; text-align:center; font-size:12px; opacity:.55; pointer-events:none; }
   footer a { color:inherit; pointer-events:auto; }
@@ -78,22 +90,36 @@
   <span class="r"><span id="best">Best 0</span><button id="mute" aria-label="Toggle sound">Sound on</button></span>
 </div>
 <div id="overlay">
-  <div class="sub">A Squeekchain community game</div>
-  <h1>Hamster Dash</h1>
-  <p id="msg">Race the real Squeekchain hamster. Every Squeekchain round deals a new course — the same one for every player — and whenever the real hamster is on its wheel, your seeds count double.</p>
-  <div id="live"><span class="dot"></span><span id="livetxt">Checking on the real hamster…</span></div>
-  <div id="course"></div>
-  <button id="play">Play</button>
-  <div class="keys">Tap / Space to hop · hold for higher · tap again mid-air for a double hop · P to pause · M to mute</div>
-  <section id="sq" aria-live="polite">
-    <h2>Squeekchain economy <small id="sqnet">loading…</small></h2>
-    <div id="stats"></div>
-    <div id="own">
-      <b>Got a Squeek?</b> Paste a wallet address — read-only, nothing to connect or sign.
-      <form id="ownform"><input id="addr" placeholder="0x…" autocomplete="off" spellcheck="false"><button type="submit">Check</button></form>
-      <div id="ownmsg"></div>
+  <main class="card">
+    <svg class="logo" viewBox="0 0 120 100" aria-hidden="true">
+      <ellipse cx="62" cy="62" rx="46" ry="34" fill="#f2a33a"/>
+      <circle cx="46" cy="28" r="12" fill="#c97a30"/><circle cx="72" cy="26" r="13" fill="#c97a30"/><circle cx="72" cy="26" r="6.5" fill="#f4b6a6"/>
+      <ellipse cx="78" cy="70" rx="27" ry="21" fill="#fff1d6"/><ellipse cx="96" cy="62" rx="14" ry="12" fill="#ffcf95"/>
+      <circle cx="88" cy="48" r="5.5" fill="#120a05"/><circle cx="90" cy="46" r="2" fill="#fff"/><circle cx="107" cy="58" r="3.5" fill="#e8566a"/>
+    </svg>
+    <div class="sub">A Squeekchain community game</div>
+    <h1>Hamster Dash</h1>
+    <p id="msg" class="tag">Race the real Squeekchain hamster.</p>
+    <button id="play">Play</button>
+    <div class="chips">
+      <span class="chip" id="chipRound">Round …</span>
+      <span class="chip" id="live"><span class="dot"></span><span id="livetxt">Wheel …</span></span>
+      <span class="chip" id="course">Best this round 0</span>
     </div>
-  </section>
+    <div class="hint">Space or tap to hop · hold for higher · hop again in mid-air</div>
+  </main>
+  <details id="more">
+    <summary>Squeekchain stats &amp; Squeek skin</summary>
+    <section id="sq" aria-live="polite">
+      <h2>Squeekchain economy <small id="sqnet">loading…</small></h2>
+      <div id="stats"></div>
+      <div id="own">
+        <b>Got a Squeek?</b> Paste a wallet address to unlock the Squeek skin. Read-only, nothing to connect or sign.
+        <form id="ownform"><input id="addr" placeholder="0x…" autocomplete="off" spellcheck="false"><button type="submit">Check</button></form>
+        <div id="ownmsg"></div>
+      </div>
+    </section>
+  </details>
 </div>
 <footer>Built for <a href="https://squeekchain.com" target="_blank" rel="noopener">Squeekchain</a></footer>
 <script>
@@ -240,7 +266,7 @@
       puff(ham.x, ham.y, second ? 8 : 5, second ? '#ffe08a' : '#c9a27a');
     }
   }
-  function start() { audio(); reset(); state = 'play'; $ov.classList.add('hidden'); renderHud(true); }
+  function start() { audio(); reset(); state = 'play'; $ov.classList.add('hidden'); document.body.classList.add('playing'); renderHud(true); }
   function pause() { if (state !== 'play') return; state = 'paused'; }
   function resume() { if (state !== 'paused') return; state = 'play'; last = performance.now(); }
 
@@ -389,9 +415,9 @@
       const race = wheelSeen
         ? `The real hamster ran <b>${realM.toFixed(1)} m</b> on its wheel during your run.`
         : '';
-      $msg.innerHTML = (isBest ? '<b>New best!</b><br>' : '') +
-        `Score <b>${s}</b> · ${seeds} seeds · ${Math.floor(dist / 100)} m<br>` +
-        `Round #${courseRound} course · your best this round: <b>${rb}</b>` + (race ? `<br>${race}` : '');
+      $msg.innerHTML = (isBest ? '<b>New best!</b>' : 'Score') + `<span class="big">${s}</span>` +
+        `${seeds} seeds · ${Math.floor(dist / 100)} m · round best ${rb}` + (race ? `<small>${race}</small>` : '');
+      document.body.classList.remove('playing'); tickClock();
       $play.textContent = 'Again';
       $ov.classList.remove('hidden'); $ov.scrollTop = 0;
     }, 550); // let the bonk play out before the menu covers it
@@ -580,7 +606,7 @@
   }
 
   // ---------- live hamster + round clock UI ----------
-  const $live = document.getElementById('live'), $livetxt = document.getElementById('livetxt'), $course = document.getElementById('course');
+  const $live = document.getElementById('live'), $livetxt = document.getElementById('livetxt'), $course = document.getElementById('course'), $chipRound = document.getElementById('chipRound');
   async function loadCore() { // round timing from the chain config
     try {
       const c = await (await fetch('https://api.squeekchain.com/v1/core', { cache: 'no-store' })).json();
@@ -603,15 +629,15 @@
   function renderLive() {
     const on = wheelOn();
     $live.classList.toggle('on', on);
-    $livetxt.innerHTML = !live.fresh ? 'The real hamster’s wheel feed is offline right now.'
-      : on ? `<b>The real hamster is running!</b> ${(live.speed / 1000).toFixed(2)} m/s · ${live.rpm.toFixed(0)} rpm — seeds count <b>double</b> right now.`
-      : 'Seeds count double whenever the real hamster is running on its wheel.';
+    $livetxt.textContent = on ? `Hamster running · ${(live.speed / 1000).toFixed(2)} m/s · seeds x2`
+      : 'Seeds x2 when the hamster runs';
   }
   const mmss = n => Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0');
   function tickClock() {
     const r = roundNow(), left = roundLeft();
     $round.innerHTML = `<span class="long">Squeekchain </span>round ${r} · ${mmss(left)}` + (wheelOn() ? ' · <span id="hudlive">wheel x2</span>' : '');
-    $course.textContent = `Course for round #${r} — same for every player, new course in ${mmss(left)}. Your best this round: ${+store.get('hd_round_' + r) || 0}`;
+    $chipRound.textContent = `Round ${r} course · new in ${mmss(left)}`;
+    $course.textContent = `Best this round ${+store.get('hd_round_' + r) || 0}`;
   }
   loadCore().then(tickClock); loadLive();
   setInterval(loadLive, 5000); setInterval(tickClock, 1000);
