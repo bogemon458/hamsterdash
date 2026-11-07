@@ -21,7 +21,9 @@
   #hud { z-index:5; position:fixed; top:12px; left:16px; right:16px; display:flex; justify-content:space-between; align-items:center;
     font-weight:700; font-size:20px; pointer-events:none; text-shadow:0 2px 0 #0008; gap:12px; }
   #hud .r { display:flex; gap:12px; align-items:center; }
-  #round { color:var(--sq); font-size:14px; font-weight:600; letter-spacing:.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  #round { color:#bff5e6; font-size:14px; font-weight:600; letter-spacing:.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;
+    background:#0008; padding:3px 10px; border-radius:999px; text-shadow:none; }
+  #score, #best { text-shadow:0 2px 0 #000a, 0 0 6px #0008; }
   #round .long { }
   @media (max-width: 520px) {
     #hud { font-size:17px; left:12px; right:12px; gap:8px; }
@@ -106,7 +108,7 @@
       <span class="chip" id="live"><span class="dot"></span><span id="livetxt">Wheel …</span></span>
       <span class="chip" id="course">Best this round 0</span>
     </div>
-    <div class="hint">Space or tap to hop · hold for higher · hop again in mid-air</div>
+    <div class="hint">Space or tap to hop · hold for higher · hop again in mid-air · watch the sky for eagles and bats</div>
   </main>
   <details id="more">
     <summary>Squeekchain stats &amp; Squeek skin</summary>
@@ -132,7 +134,7 @@
 
   // ---------- layout ----------
   let ready = false;
-  let W = 0, H = 0, DPR = 1, GROUND = 0, S = 1, bgLayer = null;
+  let W = 0, H = 0, DPR = 1, GROUND = 0, S = 1;
   function resize() {
     // phones: cap resolution so fill-rate stays cheap; desktops: up to 2x
     const coarse = matchMedia('(pointer: coarse)').matches;
@@ -145,18 +147,35 @@
     buildBg();
     if (ready && state === 'menu') reset();
   }
-  // static background (gradient + ground fill) rendered once per resize instead of every frame
+  // ---------- biomes: the world changes every BIOME_LEN of distance ----------
+  const BIOME_LEN = 15000, FADE = 1800; // 150 m per area, ~18 m cross-fade
+  const BIOMES = [
+    { name: 'The Burrow',   sky: ['#3b2a1e', '#22170f'], hill: '#33251b', ground: ['#6b4a2f', '#3e2a1a'], lip: '#7d5838', dash: '#5a3d26', flyer: 'bat',   roots: 1 },
+    { name: 'Sunny Meadow', sky: ['#6fbfe9', '#d4f0fb'], hill: '#86c063', ground: ['#5f9e3a', '#33601f'], lip: '#94d564', dash: '#4c8a2c', flyer: 'eagle', clouds: 1, grass: 1 },
+    { name: 'Sunset Hills', sky: ['#e2725b', '#ffcf8f'], hill: '#a9584a', ground: ['#94553a', '#55301d'], lip: '#c27a52', dash: '#74412a', flyer: 'eagle', sun: 1, clouds: 1 },
+    { name: 'Night Forest', sky: ['#0d1430', '#2a3566'], hill: '#18213d', ground: ['#2f3b2a', '#161f14'], lip: '#45593a', dash: '#222d1d', flyer: 'bat',   stars: 1, trees: 1 },
+  ];
+  // sky+ground gradients are smooth, so cache them at quarter resolution (tiny memory, no per-frame gradients)
+  let bgLayers = [];
   function buildBg() {
-    bgLayer = document.createElement('canvas');
-    bgLayer.width = cv.width; bgLayer.height = cv.height;
-    const b = bgLayer.getContext('2d'); b.setTransform(DPR, 0, 0, DPR, 0, 0);
-    const g = b.createLinearGradient(0, 0, 0, GROUND);
-    g.addColorStop(0, '#3b2a1e'); g.addColorStop(1, '#22170f');
-    b.fillStyle = g; b.fillRect(0, 0, W, GROUND);
-    const g2 = b.createLinearGradient(0, GROUND, 0, H);
-    g2.addColorStop(0, '#6b4a2f'); g2.addColorStop(1, '#3e2a1a');
-    b.fillStyle = g2; b.fillRect(0, GROUND, W, H - GROUND);
-    b.fillStyle = '#7d5838'; b.fillRect(0, GROUND, W, 6 * S);
+    const q = 4, w = Math.max(2, Math.ceil(W / q)), h = Math.max(2, Math.ceil(H / q)), gy = GROUND / q;
+    bgLayers = BIOMES.map(b => {
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const x = c.getContext('2d');
+      const g = x.createLinearGradient(0, 0, 0, gy); g.addColorStop(0, b.sky[0]); g.addColorStop(1, b.sky[1]);
+      x.fillStyle = g; x.fillRect(0, 0, w, gy + 1);
+      const g2 = x.createLinearGradient(0, gy, 0, h); g2.addColorStop(0, b.ground[0]); g2.addColorStop(1, b.ground[1]);
+      x.fillStyle = g2; x.fillRect(0, gy, w, h - gy);
+      return c;
+    });
+  }
+  const hex = c => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+  function mix(a, b, k) { const A = hex(a), B = hex(b); return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * k)).join(',')})`; }
+  function biomeAt(d) {
+    const n = Math.floor(d / BIOME_LEN), into = d - n * BIOME_LEN;
+    const cur = n % BIOMES.length, prev = (n + BIOMES.length - 1) % BIOMES.length;
+    const k = n === 0 ? 1 : Math.min(1, into / FADE);
+    return { cur, prev, k };
   }
   addEventListener('resize', resize); resize();
 
@@ -223,7 +242,7 @@
 
   // ---------- game state ----------
   const G = 2600, JUMP = 900, COYOTE = 0.09, BUFFER = 0.13;
-  let state = 'menu', t = 0, speed, dist, seeds, obstacles, pickups, particles, popups, hills, roots;
+  let state = 'menu', t = 0, speed, dist, seeds, obstacles, pickups, particles, popups, hills, roots, clouds, stars, flies, lastBiome = 0;
   let nextObstacleAt, nextSeedsAt, shake = 0, flash = 0, nextMile, banner = null, shield = false;
   let sinceGround = 0, bufferT = 0, holding = false;
   const ham = { x: 0, y: 0, vy: 0, jumps: 0, r: 26, squash: 1, blink: 2 };
@@ -243,6 +262,10 @@
     ham.x = Math.max(70, W * 0.2); ham.y = GROUND; ham.vy = 0; ham.jumps = 0; ham.squash = 1;
     hills = Array.from({ length: Math.ceil(W / 240) + 3 }, (_, i) => ({ x: i * 240, h: 40 + Math.random() * 70, w: 120 + Math.random() * 60 }));
     roots = Array.from({ length: Math.ceil(W / 110) + 3 }, (_, i) => ({ x: i * 110 + Math.random() * 40, len: 40 + Math.random() * 50, bend: 10 + Math.random() * 16 }));
+    clouds = Array.from({ length: Math.ceil(W / 320) + 2 }, (_, i) => ({ x: i * 320 + Math.random() * 120, y: 40 + Math.random() * (GROUND * 0.35), s: 0.7 + Math.random() * 0.6 }));
+    stars = Array.from({ length: 70 }, () => ({ x: Math.random() * W, y: Math.random() * GROUND * 0.7, r: Math.random() * 1.6 + 0.4, p: Math.random() * 6 }));
+    flies = Array.from({ length: 10 }, () => ({ x: Math.random() * W, y: GROUND - 20 - Math.random() * 120, p: Math.random() * 6 }));
+    lastBiome = 0;
   }
   reset(); ready = true;
 
@@ -291,6 +314,16 @@
   function airtime() { return 2 * JUMP / G; } // seconds of a full single hop (S cancels out)
   function spawnObstacle() {
     const roll = rng(), d = Math.min(1, dist / 12000);
+    const flyRoll = rng(), altRoll = rng(), phase = rng() * 6; // always drawn → identical course for everyone
+    const minGap = speed * airtime() * 1.05 + 60 * S;
+    // air enemies from 50 m on: eagles in daylight, bats underground and at night
+    if (dist > 5000 && flyRoll < 0.2 + d * 0.12) {
+      const sp = BIOMES[biomeAt(dist).cur].flyer, high = altRoll < 0.5;
+      obstacles.push({ kind: 'flyer', sp, high, x: W + 60 + minGap * 0.4, w: (sp === 'eagle' ? 58 : 46) * S, h: 0,
+        y: GROUND - (high ? 112 : 40) * S, phase });
+      nextObstacleAt = dist + minGap * 1.5 + rng() * 200 * S;
+      return;
+    }
     let kind = roll < 0.45 ? 'pebble' : roll < 0.75 ? 'root' : roll < 0.9 - d * 0.1 ? 'mound' : 'pair';
     const make = (k, x) => {
       if (k === 'pebble') return { kind: k, x, w: (32 + rng() * 20) * S, h: (24 + rng() * 14) * S, seed: rng() };
@@ -302,7 +335,6 @@
       obstacles.push(make('pebble', W + 40 + (60 + rng() * 30) * S));
     } else obstacles.push(make(kind, W + 40));
     // minimum gap = distance covered during one hop + margin, so there is always room to land and hop again
-    const minGap = speed * airtime() * 1.05 + 60 * S;
     nextObstacleAt = dist + minGap + rng() * Math.max(120, 520 - d * 300) * S;
   }
   function spawnSeeds() {
@@ -362,8 +394,10 @@
 
     if (dist >= nextObstacleAt) spawnObstacle();
     if (dist >= nextSeedsAt) spawnSeeds();
+    const bi = biomeAt(dist).cur;
+    if (bi !== lastBiome) { lastBiome = bi; banner = { text: BIOMES[bi].name, life: 2 }; sfx.mile(); }
     if (dist / 100 >= nextMile) {
-      banner = { text: nextMile + ' m', life: 1.2 }; sfx.mile();
+      if (!banner) banner = { text: nextMile + ' m', life: 1.2 }; sfx.mile();
       nextMile += nextMile < 500 ? 100 : 250;
     }
 
@@ -372,12 +406,19 @@
     for (const p of pickups) p.x -= dx;
     for (const h of hills) { h.x -= dx * 0.25; if (h.x < -200) h.x += hills.length * 240; }
     for (const rt of roots) { rt.x -= dx * 0.5; if (rt.x < -40) rt.x += roots.length * 110; }
+    for (const c of clouds) { c.x -= dx * 0.12; if (c.x < -200) c.x += clouds.length * 320; }
+    for (const f of flies) { f.x -= dx * 0.6; if (f.x < -10) f.x += W + 20; }
     obstacles = obstacles.filter(o => o.x + o.w > -60 && !o.dead);
     pickups = pickups.filter(p => p.x > -50 && !p.got);
 
     // collisions (circle vs box, slightly forgiving)
     const hx = ham.x, hy = ham.y - r * 0.9;
     for (const o of obstacles) {
+      if (o.kind === 'flyer') {
+        const fx = o.x + o.w / 2, fy = o.y + Math.sin(t * 3 + o.phase) * 5 * S, fr = 15 * S + r * 0.62;
+        if ((hx - fx) ** 2 + (hy - fy) ** 2 < fr * fr) { o.dead = true; if (hit()) return; }
+        continue;
+      }
       const top = GROUND - (o.kind === 'mound' ? o.h * 0.8 : o.h);
       const cx = Math.max(o.x + 3, Math.min(hx, o.x + o.w - 3)), cy = Math.max(top, Math.min(hy, GROUND));
       if ((hx - cx) ** 2 + (hy - cy) ** 2 < (r * 0.7) ** 2) { o.dead = true; if (hit()) return; }
@@ -425,20 +466,66 @@
 
   // ---------- drawing ----------
   function drawBg() {
-    ctx.drawImage(bgLayer, 0, 0, W, H);
-    ctx.fillStyle = '#33251b';
+    const { cur, prev, k } = biomeAt(dist), A = BIOMES[prev], B = BIOMES[cur];
+    ctx.imageSmoothingEnabled = true;
+    if (k < 1) ctx.drawImage(bgLayers[prev], 0, 0, W, H);
+    ctx.globalAlpha = k; ctx.drawImage(bgLayers[cur], 0, 0, W, H); ctx.globalAlpha = 1;
+    const wA = 1 - k, wB = k, w = b => (b === A ? wA : 0) + (b === B ? wB : 0);
+    const has = f => (A[f] ? wA : 0) + (B[f] ? wB : 0);
+    // sky decor
+    let a;
+    if ((a = has('stars')) > 0.01) {
+      ctx.fillStyle = '#ffffff';
+      for (const st of stars) { ctx.globalAlpha = a * (0.5 + 0.5 * Math.sin(t * 2 + st.p)); ctx.fillRect(st.x, st.y, st.r, st.r); }
+      ctx.globalAlpha = a; ctx.fillStyle = '#f4f1de'; circle(W * 0.8, GROUND * 0.22, 26 * S);
+      ctx.fillStyle = B.stars ? B.sky[0] : A.sky[0]; circle(W * 0.8 + 10 * S, GROUND * 0.22 - 6 * S, 22 * S);
+      ctx.globalAlpha = 1;
+    }
+    if ((a = has('sun')) > 0.01) {
+      ctx.globalAlpha = a * 0.35; ctx.fillStyle = '#fff1b8'; circle(W * 0.72, GROUND * 0.62, 90 * S);
+      ctx.globalAlpha = a; ctx.fillStyle = '#ffe08a'; circle(W * 0.72, GROUND * 0.62, 55 * S); ctx.globalAlpha = 1;
+    }
+    if ((a = has('clouds')) > 0.01) {
+      ctx.globalAlpha = a * 0.9; ctx.fillStyle = '#ffffff';
+      for (const c of clouds) { const z = c.s * S; ellipse(c.x, c.y, 50 * z, 18 * z); circle(c.x - 20 * z, c.y - 8 * z, 18 * z); circle(c.x + 14 * z, c.y - 12 * z, 22 * z); }
+      ctx.globalAlpha = 1;
+    }
+    // far hills (or pine silhouettes at night)
+    ctx.fillStyle = mix(A.hill, B.hill, k);
     for (const h of hills) { ctx.beginPath(); ctx.ellipse(h.x, GROUND, h.w, h.h * S + 40, 0, Math.PI, 0); ctx.fill(); }
+    if ((a = has('trees')) > 0.01) {
+      ctx.globalAlpha = a; ctx.fillStyle = '#0e1528';
+      for (const h of hills) for (let i = 0; i < 3; i++) {
+        const tx = h.x - 60 + i * 55, th = (h.h * 0.9 + 60 + i * 12) * S;
+        ctx.beginPath(); ctx.moveTo(tx - 20 * S, GROUND); ctx.lineTo(tx, GROUND - th); ctx.lineTo(tx + 20 * S, GROUND); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
     drawGhost();
-    ctx.strokeStyle = '#5c4230'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-    ctx.beginPath();
-    for (const rt of roots) { ctx.moveTo(rt.x, 0); ctx.quadraticCurveTo(rt.x + rt.bend, rt.len * 0.6, rt.x + 4, rt.len); }
-    ctx.stroke();
-    ctx.fillStyle = '#5a3d26';
+    if ((a = has('roots')) > 0.01) {
+      ctx.globalAlpha = a; ctx.strokeStyle = '#5c4230'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (const rt of roots) { ctx.moveTo(rt.x, 0); ctx.quadraticCurveTo(rt.x + rt.bend, rt.len * 0.6, rt.x + 4, rt.len); }
+      ctx.stroke(); ctx.globalAlpha = 1;
+    }
+    // ground lip + scrolling ground marks
+    ctx.fillStyle = mix(A.lip, B.lip, k); ctx.fillRect(0, GROUND, W, 6 * S);
+    ctx.fillStyle = mix(A.dash, B.dash, k);
     const off = dist % 60;
     for (let x = -off; x < W; x += 60) ctx.fillRect(x, GROUND + 22 * S, 18, 4);
     const off2 = (dist * 1.3) % 90;
-    ctx.fillStyle = '#4e3421';
     for (let x = -off2; x < W; x += 90) ctx.fillRect(x + 30, GROUND + 48 * S, 10, 3);
+    if ((a = has('grass')) > 0.01) {
+      ctx.globalAlpha = a; ctx.fillStyle = '#5aa43a';
+      const og = dist % 46;
+      for (let x = -og; x < W; x += 46) { ctx.beginPath(); ctx.moveTo(x, GROUND + 1); ctx.lineTo(x + 4, GROUND - 9 * S); ctx.lineTo(x + 8, GROUND + 1); ctx.lineTo(x + 12, GROUND - 6 * S); ctx.lineTo(x + 15, GROUND + 1); ctx.fill(); }
+      ctx.globalAlpha = 1;
+    }
+    if ((a = has('stars')) > 0.01) { // fireflies at night
+      ctx.fillStyle = '#e8ff8a';
+      for (const f of flies) { ctx.globalAlpha = a * Math.max(0, Math.sin(t * 3 + f.p)); circle(f.x, f.y + Math.sin(t + f.p) * 6, 2.2); }
+      ctx.globalAlpha = 1;
+    }
   }
 
   // the real Squeekchain hamster, drawn as a translucent "LIVE" ghost on the far ridge:
@@ -517,9 +604,53 @@
   // hazards use colours that never appear in the burrow (light grey stone, clay)
   // and a dark outline so they pop against the brown ground and hills
   const OUT = '#120a05';
+  function drawFlyer(o) {
+    const cx = o.x + o.w / 2, cy = o.y + Math.sin(t * 3 + o.phase) * 5 * S, z = S;
+    const flap = Math.sin(t * (o.sp === 'eagle' ? 9 : 16) + o.phase);
+    if (o.x > W - 20) { // incoming warning at the screen edge
+      ctx.fillStyle = '#ff5a3c'; ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t * 14);
+      circle(W - 22 * z, cy, 14 * z);
+      ctx.globalAlpha = 1; ctx.fillStyle = '#fff'; ctx.font = `700 ${Math.round(18 * z)}px Fredoka, sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', W - 22 * z, cy + 1);
+      return;
+    }
+    ctx.save(); ctx.translate(cx, cy); ctx.lineJoin = 'round'; ctx.strokeStyle = OUT; ctx.lineWidth = 2.5;
+    if (o.sp === 'eagle') {
+      // wings (up/down flap), body, white head, hooked yellow beak — faces left toward the hamster
+      // wide feathered wings: far wing behind the body, near wing on top, beating up and down
+      const span = (16 + 16 * Math.abs(flap)) * z * (flap >= 0 ? -1 : 1);
+      const wing = (dx, k, col) => {
+        ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(dx - 10 * z, -2 * z);
+        ctx.lineTo(dx - 7 * z, span * k); ctx.lineTo(dx - 1 * z, span * k * 0.82); ctx.lineTo(dx + 4 * z, span * k);
+        ctx.lineTo(dx + 9 * z, span * k * 0.82); ctx.lineTo(dx + 14 * z, span * k * 0.92); ctx.lineTo(dx + 14 * z, -2 * z);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+      };
+      wing(8 * z, 0.8, '#3f2410');
+      ctx.fillStyle = '#7a4520'; ctx.beginPath(); ctx.ellipse(4 * z, 2 * z, 20 * z, 10 * z, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(22 * z, 0); ctx.lineTo(34 * z, -6 * z); ctx.lineTo(34 * z, 8 * z); ctx.closePath(); ctx.fill(); ctx.stroke(); // tail
+      wing(0, 1, '#5e3416');
+      ctx.fillStyle = '#f7f3ea'; ctx.beginPath(); ctx.arc(-16 * z, -3 * z, 9 * z, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ffc12e'; ctx.beginPath(); ctx.moveTo(-24 * z, -5 * z); ctx.lineTo(-33 * z, -1 * z); ctx.lineTo(-24 * z, 2 * z); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = OUT; circle(-18 * z, -5 * z, 1.8 * z);
+    } else {
+      // bat: scalloped wings, round body, ears, red eyes
+      ctx.fillStyle = '#3b2a4f';
+      for (const sgn of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(0, -2 * z);
+        ctx.lineTo(sgn * 24 * z, -12 * z * flap - 8 * z); ctx.lineTo(sgn * 26 * z, 6 * z);
+        ctx.quadraticCurveTo(sgn * 18 * z, 0, sgn * 13 * z, 8 * z); ctx.quadraticCurveTo(sgn * 8 * z, 2 * z, 0, 8 * z);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+      }
+      ctx.fillStyle = '#4a3663'; ctx.beginPath(); ctx.ellipse(0, 2 * z, 9 * z, 11 * z, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-7 * z, -6 * z); ctx.lineTo(-5 * z, -15 * z); ctx.lineTo(-1 * z, -8 * z); ctx.moveTo(7 * z, -6 * z); ctx.lineTo(5 * z, -15 * z); ctx.lineTo(1 * z, -8 * z); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ff4d4d'; circle(-3.5 * z, -1 * z, 2 * z); circle(3.5 * z, -1 * z, 2 * z);
+    }
+    ctx.restore();
+  }
   function drawObstacles() {
     ctx.lineJoin = 'round';
     for (const o of obstacles) {
+      if (o.kind === 'flyer') { drawFlyer(o); continue; }
       if (o.kind === 'pebble') {
         ctx.fillStyle = '#9d9892'; ctx.strokeStyle = OUT; ctx.lineWidth = 2.5;
         ctx.beginPath(); ctx.ellipse(o.x + o.w / 2, GROUND - o.h / 2, o.w / 2, o.h / 2, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();

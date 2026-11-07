@@ -17,6 +17,8 @@ Everything is read straight from the browser — **no wallet connection, no sign
 - **P / Esc** — pause · **M** — mute
 
 ## Gameplay
+- Four areas that cross-fade every 150 m: The Burrow → Sunny Meadow → Sunset Hills → Night Forest (and around again)
+- Air enemies from 50 m: eagles in daylight, bats underground and at night — high flyers punish a jump, low flyers must be hopped; a red "!" warns before they arrive
 - Pebbles, roots, mounds and pebble pairs; spacing always leaves room for a full hop at the current speed
 - Golden seeds grant a one-hit shield; the hamster's cheeks grow as it eats
 - Coyote time + jump buffering for forgiving controls; milestones, score pop-ups, screen shake
