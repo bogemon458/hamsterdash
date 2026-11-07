@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="squeekchain-project" content="478ab808-9282-4b50-b1b0-4aa3b852f280">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hamster Dash Whitepaper</title>
+<meta name="description" content="How Hamster Dash works: round-seeded courses, the live Squeekchain wheel, and an in-game economy that follows Squeekchain's real issuance and staking rules.">
+<meta name="theme-color" content="#1b1410">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><ellipse cx='50' cy='58' rx='40' ry='32' fill='%23e8a25c'/><circle cx='34' cy='26' r='11' fill='%23d98c45'/><circle cx='64' cy='28' r='10' fill='%23d98c45'/><circle cx='70' cy='50' r='6' fill='%231a0f08'/><ellipse cx='60' cy='66' rx='22' ry='17' fill='%23fbe7c8'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#1b1410; --card:#261b14; --line:#3a2a1e; --fg:#fbe9d0; --dim:#cdb89c; --accent:#f2a33a; --sq:#5fd3b5; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html { scroll-behavior:smooth; }
+  body { background:var(--bg); color:var(--fg); font-family:"Fredoka", ui-rounded, system-ui, sans-serif; font-size:17px; line-height:1.6; }
+  a { color:var(--sq); }
+  .top { position:sticky; top:0; z-index:5; background:#1b1410ee; backdrop-filter:blur(6px); border-bottom:1px solid var(--line); }
+  .top .in { max-width:860px; margin:0 auto; padding:10px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .brand { font-weight:700; color:var(--accent); text-decoration:none; font-size:20px; }
+  .play { background:var(--accent); color:#2a1a0c; font-weight:700; text-decoration:none; padding:7px 18px; border-radius:999px; box-shadow:0 3px 0 #9c5d17; }
+  main { max-width:860px; margin:0 auto; padding:36px 16px 80px; }
+  .kicker { font-size:12px; letter-spacing:3px; text-transform:uppercase; color:var(--sq); font-weight:600; }
+  h1 { font-size:clamp(36px, 8vw, 56px); line-height:1; color:var(--accent); text-shadow:0 4px 0 #7a4a16; margin:8px 0 14px; }
+  .lead { font-size:19px; color:var(--dim); max-width:640px; }
+  nav.toc { margin:28px 0 8px; display:flex; flex-wrap:wrap; gap:8px; }
+  nav.toc a { text-decoration:none; color:var(--fg); background:var(--card); border:1px solid var(--line); padding:5px 12px; border-radius:999px; font-size:14px; }
+  nav.toc a:hover { border-color:var(--sq); }
+  section { margin-top:44px; scroll-margin-top:70px; }
+  h2 { font-size:26px; color:var(--accent); margin-bottom:10px; }
+  h2 span { color:var(--sq); font-size:16px; margin-right:8px; }
+  h3 { font-size:18px; margin:20px 0 6px; }
+  p, ul, ol { margin-bottom:12px; }
+  ul, ol { padding-left:22px; }
+  li { margin-bottom:4px; }
+  code { font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:.86em; background:#0005; padding:1px 6px; border-radius:6px; color:#ffe2b8; overflow-wrap:anywhere; }
+  pre { background:#0006; border:1px solid var(--line); border-radius:12px; padding:14px 16px; overflow-x:auto; margin-bottom:14px; font-size:14px; line-height:1.5; }
+  pre code { background:none; padding:0; }
+  .tbl { overflow-x:auto; margin-bottom:14px; }
+  table { border-collapse:collapse; width:100%; font-size:15px; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--dim); font-weight:600; font-size:13px; text-transform:uppercase; letter-spacing:1px; }
+  .live { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px; margin:16px 0; }
+  .live div { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 14px; }
+  .live b { display:block; font-size:24px; color:var(--fg); }
+  .live span { font-size:13px; color:var(--dim); }
+  .note { background:#5fd3b512; border:1px solid #5fd3b544; border-radius:14px; padding:12px 16px; margin:14px 0; }
+  .flow { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:14px 0; }
+  .flow div { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:8px 12px; font-weight:600; }
+  .flow i { color:var(--sq); font-style:normal; }
+  footer { max-width:860px; margin:0 auto; padding:24px 16px 40px; color:var(--dim); font-size:14px; border-top:1px solid var(--line); }
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <a class="brand" href="../">Hamster Dash</a>
+  <a class="play" href="../">Play</a>
+</div></header>
+
+<main>
+  <div class="kicker">Whitepaper · v1 · November 2026</div>
+  <h1>Hamster Dash</h1>
+  <p class="lead">An endless runner built on top of Squeekchain, the blockchain powered by a real hamster on a real wheel. The course, the bonuses and the rewards in the game all come from live Squeekchain data, and the reward math uses the same rules as the chain.</p>
+
+  <nav class="toc">
+    <a href="#game">1. The game</a>
+    <a href="#rounds">2. Fair courses</a>
+    <a href="#wheel">3. The real hamster</a>
+    <a href="#economy">4. Economy</a>
+    <a href="#power">5. Squeek power</a>
+    <a href="#data">6. Data sources</a>
+    <a href="#safety">7. Safety</a>
+    <a href="#limits">8. Limits &amp; ideas</a>
+  </nav>
+
+  <div class="live" id="live">
+    <div><b id="lvRound">…</b><span>Squeekchain round right now</span></div>
+    <div><b id="lvReward">…</b><span>SQK per Squeek block right now</span></div>
+    <div><b id="lvWork">…</b><span>Seeds (work) per block</span></div>
+    <div><b id="lvWheel">…</b><span>The real wheel</span></div>
+  </div>
+
+  <section id="game">
+    <h2><span>1</span>The game</h2>
+    <p>You play a hamster running through four areas: the Burrow, Sunny Meadow, Sunset Hills and Night Forest. The area changes every 150 m. You hop over pebbles, sharp grey rocks and roots, and duck under eagles and bats. Speed goes up with distance, so a run gets harder the longer you last.</p>
+    <ul>
+      <li><b>Hop:</b> Space, ↑, W or tap. Hold for a higher hop, press again in the air for a double hop.</li>
+      <li><b>Duck:</b> ↓ or S, or the button on phones. Ducking in the air makes you fall fast.</li>
+      <li><b>Seeds</b> are worth 10 points each and are also your <i>work</i> (section 4). A <b>golden seed</b> gives you a shield that blocks one hit.</li>
+      <li><b>Score</b> = seeds × 10 + metres run. Wallets and Squeeks don't change your score, so everyone on the same course competes on equal terms.</li>
+    </ul>
+  </section>
+
+  <section id="rounds">
+    <h2><span>2</span>Fair courses, one per round</h2>
+    <p>Squeekchain splits time into 10-minute rounds, counted from the genesis time in the core contract. The game reads <code>genesisTimestamp</code> and <code>roundDuration</code> from <code>/v1/core</code> and works out the current round the same way the chain does:</p>
+    <pre><code>round = floor((now − genesisTimestamp) / roundDuration) + 1</code></pre>
+    <p>That round number seeds the random generator behind obstacles, seeds and flyers. So every player in the same round gets the exact same course, and a new course starts when the round rolls over. Speed depends only on distance, so the course plays the same on a slow phone as on a fast PC. Your best score for each round is saved, so you can compare runs with friends playing the same round.</p>
+  </section>
+
+  <section id="wheel">
+    <h2><span>3</span>The real hamster</h2>
+    <p>Every 5 seconds the game checks <code>/v1/status</code> to see what the wheel is doing. When <code>coreStatus</code> is <code>ACTIVE</code>, the real hamster is running:</p>
+    <ul>
+      <li>a "LIVE" ghost hamster runs along the far ridge at the wheel's real speed (<code>speedMmPerSecond</code>);</li>
+      <li>every seed you grab counts double, both points and work;</li>
+      <li>after the run you see how many metres the real hamster ran while you were playing.</li>
+    </ul>
+    <p>The game also watches the chain's Squeek block height. If the real hamster completes a Squeek block during your run, you get one block for free.</p>
+  </section>
+
+  <section id="economy">
+    <h2><span>4</span>Economy: the same rules as Squeekchain</h2>
+    <p>The game has a small economy that copies how SQK is created on Squeekchain (see the <a href="https://docs.squeekchain.com/rewards/" target="_blank" rel="noopener">Rewards docs</a>). It follows the same steps as the chain, with seeds in place of wheel turns:</p>
+    <div class="flow">
+      <div>Seeds = work</div><i>→</i><div>Squeek block</div><i>→</i><div>SQK issued</div><i>→</i><div>Checkpoint flag</div><i>→</i><div>Staked</div>
+    </div>
+
+    <h3>4.1 Work and blocks</h3>
+    <p>On Squeekchain, every magnet pass on the wheel is one unit of work, and a Squeek block finishes when enough work is done at the current difficulty. In the game every seed is one unit of work (two while the real wheel is running), and the work needed per block comes straight from the chain:</p>
+    <pre><code>work per block = workPerThousandBlocks / 1000   (live from /v1/core)</code></pre>
+    <p>When the chain's difficulty moves, the game's does too. The bar in the top-left corner shows how full your current block is.</p>
+
+    <h3>4.2 Issuance per block</h3>
+    <p>Each block you finish issues SQK on the same schedule as SqueekMining: a base rate that halves over three periods, plus a launch bonus spread over the first blocks. The block number used is the chain's funded block height plus the blocks from your run.</p>
+    <pre><code>A  = 1,890,000,000 SQK   allowance (2.1B cap − 210M premint)
+G  =   105,000,000 SQK   launch bonus, spread over N = 97,020 blocks
+H  =       393,470       blocks per halving period
+R0 = floor((A − G) · 4 / (7 · H)), rounded down to a multiple of 4  ≈ 2,592 SQK
+
+reward(b) = R0 / 2^floor(b / H)   (only while b &lt; 3H, then 0)
+          + G / N                  (only while b &lt; N)</code></pre>
+    <p>During the launch bonus that comes to about <b>3,674 SQK per block</b>. As a check: Mining has minted about 7.35M SQK for the first 1,999 blocks, which is 3,674 per block, the same number. If the API publishes a schedule, the game uses the live values instead of the ones above.</p>
+    <div class="tbl"><table>
+      <tr><th>Period</th><th>Blocks</th><th>Base per block</th><th>+ launch bonus</th></tr>
+      <tr><td>Launch</td><td>0 – 97,019</td><td>≈ 2,592</td><td>≈ 1,082</td></tr>
+      <tr><td>1</td><td>0 – 393,469</td><td>≈ 2,592</td><td>until block 97,020</td></tr>
+      <tr><td>2</td><td>393,470 – 786,939</td><td>≈ 1,296</td><td>–</td></tr>
+      <tr><td>3</td><td>786,940 – 1,180,409</td><td>≈ 648</td><td>–</td></tr>
+      <tr><td>After</td><td>1,180,410 +</td><td>0</td><td>–</td></tr>
+    </table></div>
+
+    <h3>4.3 Checkpoints</h3>
+    <p>On Squeekchain, finished blocks don't pay anyone until a checkpoint mints their SQK and sends it to Staking. The game works the same way. SQK from your blocks stays <i>pending</i> (yellow) until you run past a <b>STAKE</b> flag, which comes every 100 m. Then it becomes <i>staked</i> (teal). If you crash before the next flag, the pending SQK is lost. That's the risk you take for pushing on.</p>
+
+    <h3>4.4 Your Dash stake</h3>
+    <p>Staked SQK from every run adds up into your <b>Dash stake</b>, which is saved in your browser. Its power uses the staking formula from SqueekStaking:</p>
+    <pre><code>power = P + S / c × (1 + P / P_ref)      c = 40 SQK, P_ref = 1,000
+S = your Dash stake, P = Squeek power of your staked Squeeks</code></pre>
+  </section>
+
+  <section id="power">
+    <h2><span>5</span>Squeek power</h2>
+    <p>Paste a wallet address in the menu (or open <code>hamsterdash.site/?address=0x…</code>) and the game reads that account from <code>/v1/accounts/{address}</code>:</p>
+    <ul>
+      <li>Owning any Squeek, in the wallet or staked, unlocks the teal Squeek skin.</li>
+      <li><b>Staked</b> Squeeks boost the SQK you mine, by the same factor that boosts staked SQK on Squeekchain: <code>×(1 + P / 1,000)</code>. As on the chain, only deposited Squeeks count.</li>
+      <li>The game also shows the wallet's real staking power, its share of all power, and roughly how much real SQK that share earns per block.</li>
+    </ul>
+    <div class="tbl"><table>
+      <tr><th>Level</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr>
+      <tr><td>Power</td><td>1,000</td><td>2,200</td><td>4,840</td><td>10,648</td><td>23,426</td></tr>
+      <tr><td>Boost (one staked)</td><td>×2</td><td>×3.2</td><td>×5.84</td><td>×11.6</td><td>×24.4</td></tr>
+    </table></div>
+    <p>Each level has 2.2 times the power of the one below, so merging two Squeeks always gives a bit more boost than keeping the pair.</p>
+  </section>
+
+  <section id="data">
+    <h2><span>6</span>Data sources</h2>
+    <div class="tbl"><table>
+      <tr><th>Source</th><th>Used for</th><th>How often</th></tr>
+      <tr><td><code>/v1/core</code></td><td>Round clock, difficulty, Squeek block height</td><td>Every 20 s</td></tr>
+      <tr><td><code>/v1/status</code></td><td>Wheel status, speed, RPM</td><td>Every 5 s</td></tr>
+      <tr><td><code>/v1/economy/state</code></td><td>Funded blocks, issuance schedule, supply, staking totals, Squeeks alive</td><td>Every 60 s</td></tr>
+      <tr><td><code>/v1/accounts/{address}</code></td><td>Squeeks, levels, staking power</td><td>When you check a wallet</td></tr>
+      <tr><td>Sepolia <code>balanceOf</code></td><td>Fallback Squeek check if the API is down</td><td>When needed</td></tr>
+    </table></div>
+    <p>All endpoints are on <code>api.squeekchain.com</code>. Contracts on Sepolia: Squeek collection <code>0xc4c7982657f00509548f3a3a41db7fa439a6856b</code>, SQK <code>0xd78a3956cf63164d1fa1c622ad3c66623162fa1e</code>.</p>
+  </section>
+
+  <section id="safety">
+    <h2><span>7</span>Safety and honesty</h2>
+    <ul>
+      <li><b>Read-only.</b> No wallet connect, no signatures, no transactions. A pasted address is only used to read public data.</li>
+      <li><b>Simulated SQK.</b> SQK in the game is simulated with Squeekchain's rules. It's not a real token, can't be claimed, and only lives in your browser.</li>
+      <li><b>No tracking.</b> No accounts, cookies or analytics. Scores, settings and your Dash stake stay in your browser's local storage.</li>
+      <li><b>Open source.</b> One HTML file with no dependencies, MIT licensed: <a href="https://github.com/bogemon458/hamsterdash" target="_blank" rel="noopener">github.com/bogemon458/hamsterdash</a>.</li>
+    </ul>
+  </section>
+
+  <section id="limits">
+    <h2><span>8</span>Limits and ideas</h2>
+    <p>Being clear about what the game does <i>not</i> do yet:</p>
+    <ul>
+      <li>Scores are only saved in your own browser. There is no shared leaderboard yet.</li>
+      <li>Squeekchain is on the Sepolia testnet, and some numbers (difficulty, issuance start) may change when mainnet arrives. The game reads them live where it can.</li>
+      <li>If the wheel is idle, the live bonuses simply don't show up. The game only rewards real wheel activity.</li>
+    </ul>
+    <p>Ideas for later: a shared leaderboard per round, Squeek levels shown as skin details, and an optional signed score submission once Squeekchain is on mainnet.</p>
+    <div class="note">Hamster Dash is a community project and is not run by the Squeekchain team. Squeekchain project ID: <code>478ab808-9282-4b50-b1b0-4aa3b852f280</code></div>
+  </section>
+</main>
+
+<footer>Hamster Dash · <a href="../">Play</a> · <a href="https://github.com/bogemon458/hamsterdash" target="_blank" rel="noopener">Source</a> · Built for <a href="https://squeekchain.com" target="_blank" rel="noopener">Squeekchain</a></footer>
+
+<script>
+(() => {
+  const api = p => fetch('https://api.squeekchain.com' + p, { cache: 'no-store' }).then(r => r.json());
+  const nf = n => Intl.NumberFormat('en', { maximumFractionDigits: 1 }).format(n);
+  const set = (id, v) => { document.getElementById(id).textContent = v; };
+  const A = 1890000000, G = 105000000, N = 97020, H = 393470;
+  const R0 = (() => { const r = Math.floor((A - G) * 4 / (7 * H)); return r - r % 4; })();
+  const reward = b => { const p = Math.floor(b / H); return (p < 3 ? R0 / 2 ** p : 0) + (b < N ? G / N : 0); };
+  api('/v1/core').then(c => {
+    const g = +c.configuration.genesisTimestamp, d = +c.configuration.roundDuration;
+    set('lvRound', '#' + (Math.floor((Date.now() / 1000 - g) / d) + 1));
+    set('lvWork', nf(+c.core.workPerThousandBlocks / 1000));
+  }).catch(() => { set('lvRound', '–'); set('lvWork', '–'); });
+  api('/v1/economy/state').then(s => set('lvReward', nf(reward(+s.mining.fundedBlocks || 0))))
+    .catch(() => set('lvReward', '≈ 3,674'));
+  api('/v1/status').then(s => {
+    const m = s.measurement || {};
+    set('lvWheel', m.coreStatus === 'ACTIVE' ? 'Running · ' + nf((+m.speedMmPerSecond || 0) / 1000) + ' m/s' : 'Idle');
+  }).catch(() => set('lvWheel', '–'));
+})();
+</script>
+</body>
+</html>

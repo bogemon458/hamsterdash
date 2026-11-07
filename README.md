@@ -18,6 +18,8 @@ Everything is read straight from the browser — **no wallet connection, no sign
 - All SQK in the game is simulated and stays in your browser. It's not a real token, and nothing is ever signed or sent.
 - **Economy panel** from [`/v1/economy/state`](https://api.squeekchain.com/v1/economy/state): settled on-chain round, SQK live supply and staked, Squeeks alive, SQK per block now, issuance period, work per block, your Dash stake.
 
+Full write-up: [hamsterdash.site/whitepaper](https://hamsterdash.site/whitepaper/)
+
 ## Controls
 - **Space / ↑ / W** or **tap** — hop; hold for a higher hop, press again mid-air for a double hop
 - **↓ / S** or the **⬇ button** on phones — duck (mid-air: fast fall)
