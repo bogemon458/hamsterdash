@@ -33,11 +33,26 @@
   }
   #mute { pointer-events:auto; font:inherit; font-size:14px; padding:4px 10px; border-radius:8px; border:1px solid #fbe9d044;
     background:#0006; color:var(--fg); cursor:pointer; }
-  #overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:safe center;
-    gap:16px; text-align:center; padding:24px 16px 48px; overflow-y:auto;
-    background:radial-gradient(ellipse at 50% 35%, #3a2616f2 0%, #1b1410f7 70%); }
+  /* the live demo game is the menu background: only darken the top and bottom where text sits */
+  #overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:space-between;
+    gap:14px; text-align:center; padding:52px 16px 14px; overflow-y:auto; justify-content:flex-start;
+    background:linear-gradient(to bottom, #1b141080 0%, #1b141033 30%, #1b141000 48%, #1b141000 80%, #1b141099 100%); }
+  .top { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  #overlay .tag, #overlay .hint, #overlay .sub { text-shadow:0 2px 6px #000c; }
+  /* intro: the title pops in big in the middle, then shrinks up into place; the rest fades in after */
+  #overlay.intro .top { animation:titleIn 1.5s cubic-bezier(.2,.9,.25,1) both; }
+  #overlay.intro .card, #overlay.intro .bottom { animation:fadeUp .6s ease-out 1.35s both; }
+  @keyframes titleIn {
+    0%   { transform:translateY(24vh) scale(.4); opacity:0; }
+    30%  { transform:translateY(24vh) scale(1.9); opacity:1; }
+    50%  { transform:translateY(24vh) scale(1.7); }
+    100% { transform:translateY(0) scale(1); }
+  }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:none; } }
+  @media (prefers-reduced-motion: reduce) { #overlay.intro * { animation:none !important; } }
   #overlay.hidden { display:none; }
   .card { display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; max-width:480px; }
+  .bottom { margin-top:auto; display:flex; flex-direction:column; align-items:center; gap:6px; width:100%; }
   .logo { width:110px; height:92px; filter:drop-shadow(0 6px 0 #0006); animation:bob 1.6s ease-in-out infinite; }
   @keyframes bob { 50% { transform:translateY(-6px) rotate(-3deg); } }
   .sub { font-size:12px; letter-spacing:3px; text-transform:uppercase; color:var(--sq); font-weight:600; }
@@ -56,9 +71,8 @@
   .chip.on { background:#5fd3b522; border-color:#5fd3b588; color:#bff5e6; }
   .chip.on .dot { background:var(--sq); animation:pulse 1.2s infinite; }
   @keyframes pulse { 0% { box-shadow:0 0 0 0 #5fd3b5aa; } 100% { box-shadow:0 0 0 8px #5fd3b500; } }
-  .hint { font-size:13px; opacity:.55; }
-  #pv { width:100%; max-width:440px; aspect-ratio:16/9; border-radius:14px; border:2px solid #f2a33a66;
-    box-shadow:0 10px 30px #0008; background:#22170f; display:block; }
+  .hint { font-size:13px; opacity:.75; }
+  #overlay .chip { background:#1b1410b3; }
   #duck { display:none; position:fixed; left:18px; bottom:22px; z-index:6; width:76px; height:76px; padding:0; border-radius:50%;
     font-size:34px; line-height:1; background:#fbe9d0d9; color:#2a1a0c; box-shadow:0 4px 0 #0006; touch-action:none; }
   @media (pointer: coarse) { body.playing #duck { display:block; } }
@@ -97,26 +111,22 @@
   <span id="round" title="Current Squeekchain round — every round deals a new course"></span>
   <span class="r"><span id="best">Best 0</span><button id="mute" aria-label="Toggle sound">Sound on</button></span>
 </div>
-<div id="overlay">
-  <main class="card">
-    <svg class="logo" viewBox="0 0 120 100" aria-hidden="true">
-      <ellipse cx="62" cy="62" rx="46" ry="34" fill="#f2a33a"/>
-      <circle cx="46" cy="28" r="12" fill="#c97a30"/><circle cx="72" cy="26" r="13" fill="#c97a30"/><circle cx="72" cy="26" r="6.5" fill="#f4b6a6"/>
-      <ellipse cx="78" cy="70" rx="27" ry="21" fill="#fff1d6"/><ellipse cx="96" cy="62" rx="14" ry="12" fill="#ffcf95"/>
-      <circle cx="88" cy="48" r="5.5" fill="#120a05"/><circle cx="90" cy="46" r="2" fill="#fff"/><circle cx="107" cy="58" r="3.5" fill="#e8566a"/>
-    </svg>
+<div id="overlay" class="intro">
+  <header class="top">
     <div class="sub">A Squeekchain community game</div>
-    <h1>Hamster Dash</h1>
+    <h1 id="title">Hamster Dash</h1>
+  </header>
+  <main class="card">
     <p id="msg" class="tag">Race the real Squeekchain hamster.</p>
-    <canvas id="pv" aria-label="Gameplay preview"></canvas>
     <button id="play">Play</button>
     <div class="chips">
       <span class="chip" id="chipRound">Round …</span>
       <span class="chip" id="live"><span class="dot"></span><span id="livetxt">Wheel …</span></span>
       <span class="chip" id="course">Best this round 0</span>
     </div>
-    <div class="hint">Space / tap to hop (hold = higher, again = double hop) · ↓ or S to duck · dodge eagles and bats</div>
   </main>
+  <div class="bottom">
+  <div class="hint">Space / tap to hop (hold = higher, again = double hop) · ↓ or S to duck · dodge eagles and bats</div>
   <details id="more">
     <summary>Squeekchain stats &amp; Squeek skin</summary>
     <section id="sq" aria-live="polite">
@@ -130,6 +140,7 @@
     </section>
   </details>
   <div class="hint credit">Built for <a href="https://squeekchain.com" target="_blank" rel="noopener">Squeekchain</a></div>
+  </div>
 </div>
 <button id="duck" aria-label="Duck">&#11015;</button>
 <footer>Built for <a href="https://squeekchain.com" target="_blank" rel="noopener">Squeekchain</a></footer>
@@ -154,7 +165,7 @@
     S = Math.max(0.6, Math.min(1.4, H / 600));
     GROUND = Math.round(H * 0.78);
     buildBg();
-    if (ready && state === 'demo') reset();
+    if (ready && state === 'demo') reset(true); // re-layout without skipping to the next demo area
   }
   // ---------- biomes: the world changes every BIOME_LEN of distance ----------
   const BIOME_LEN = 15000, FADE = 1800; // 150 m per area, ~18 m cross-fade
@@ -264,7 +275,7 @@
   };
 
   const speedAt = d => Math.min(980, Math.sqrt(360 * 360 + 18 * d)); // speed is a function of distance → same course timing on every device
-  function reset() {
+  function reset(keepArea) {
     courseRound = roundNow(); rng = mulberry32(hashStr('hamsterdash/round/' + courseRound));
     wheelMm = 0; wheelSeen = false;
     speed = 360; dist = 0; seeds = 0; obstacles = []; pickups = []; particles = []; popups = [];
@@ -277,7 +288,14 @@
     stars = Array.from({ length: 70 }, () => ({ x: Math.random() * W, y: Math.random() * GROUND * 0.7, r: Math.random() * 1.6 + 0.4, p: Math.random() * 6 }));
     flies = Array.from({ length: 10 }, () => ({ x: Math.random() * W, y: GROUND - 20 - Math.random() * 120, p: Math.random() * 6 }));
     lastBiome = 0;
+    if (state === 'demo') { // menu preview: start each demo run in the next area so the menu stays colourful
+      if (!keepArea || !demoArea) demoArea = demoArea % (BIOMES.length - 1) + 1; // cycle the outdoor areas: meadow, sunset, night
+      dist = demoArea * BIOME_LEN + (demoArea ? FADE : 0); speed = speedAt(dist); // past the cross-fade so the area shows fully
+      nextObstacleAt = dist + 900; nextSeedsAt = dist + 400; nextMile = Math.floor(dist / 10000) * 100 + 100;
+      lastBiome = biomeAt(dist).cur;
+    }
   }
+  let demoArea = 0;
   reset(); ready = true;
 
   // ---------- input ----------
@@ -300,7 +318,7 @@
       puff(ham.x, ham.y, second ? 8 : 5, second ? '#ffe08a' : '#c9a27a');
     }
   }
-  function start() { audio(); ducking = false; reset(); state = 'play'; $ov.classList.add('hidden'); document.body.classList.add('playing'); renderHud(true); }
+  function start() { $ov.classList.remove('intro'); audio(); ducking = false; state = 'play'; reset(); $ov.classList.add('hidden'); document.body.classList.add('playing'); renderHud(true); }
   function pause() { if (state !== 'play') return; state = 'paused'; }
   function resume() { if (state !== 'paused') return; state = 'play'; last = performance.now(); }
 
@@ -412,7 +430,7 @@
     if (state !== 'play' && state !== 'demo') return;
     if (state === 'demo') autopilot();
 
-    speed = speedAt(dist); dist += speed * dt;
+    speed = state === 'demo' ? Math.min(560, speedAt(dist)) : speedAt(dist); dist += speed * dt;
     if (wheelOn()) { wheelMm += live.speed * dt; wheelSeen = true; }
     const r = ham.r * S;
 
@@ -431,9 +449,9 @@
     if (dist >= nextObstacleAt) spawnObstacle();
     if (dist >= nextSeedsAt) spawnSeeds();
     const bi = biomeAt(dist).cur;
-    if (bi !== lastBiome) { lastBiome = bi; banner = { text: BIOMES[bi].name, life: 2 }; sfx.mile(); }
+    if (bi !== lastBiome) { lastBiome = bi; if (state === 'play') { banner = { text: BIOMES[bi].name, life: 2 }; sfx.mile(); } }
     if (dist / 100 >= nextMile) {
-      if (!banner) banner = { text: nextMile + ' m', life: 1.2 }; sfx.mile();
+      if (!banner && state === 'play') banner = { text: nextMile + ' m', life: 1.2 }; sfx.mile();
       nextMile += nextMile < 500 ? 100 : 250;
     }
 
@@ -887,17 +905,6 @@
     if (saved) { $addr.value = saved; checkWallet(saved); }
   } catch (e) {}
 
-  // ---------- menu preview window: a cropped, scaled copy of the live demo ----------
-  const $pv = document.getElementById('pv'), pctx = $pv.getContext('2d');
-  function drawPreview() {
-    const pw = $pv.clientWidth, ph = $pv.clientHeight; if (!pw || !ph) return;
-    const pd = Math.min(window.devicePixelRatio || 1, 2);
-    if ($pv.width !== Math.round(pw * pd)) { $pv.width = Math.round(pw * pd); $pv.height = Math.round(ph * pd); }
-    const top = Math.max(0, GROUND - 230 * S), bottom = Math.min(H, GROUND + 40 * S);
-    const sh = bottom - top, sw = Math.min(W, sh * 16 / 9), sx = Math.max(0, Math.min(W - sw, ham.x - sw * 0.18));
-    pctx.drawImage(cv, sx * DPR, top * DPR, sw * DPR, sh * DPR, 0, 0, $pv.width, $pv.height);
-  }
-
   // ---------- main loop ----------
   let last = performance.now();
   function frame(now) {
@@ -908,7 +915,6 @@
       if (shake > 0) ctx.translate((Math.random() - .5) * 14 * shake / 0.35, (Math.random() - .5) * 10 * shake / 0.35);
       drawBg(); drawPickups(); drawObstacles(); drawHamster(); drawFx();
       ctx.restore();
-      if (state === 'demo' && !$ov.classList.contains('hidden')) drawPreview();
     }
     requestAnimationFrame(frame);
   }
