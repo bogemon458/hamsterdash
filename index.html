@@ -100,6 +100,14 @@
     background:#0b1210; color:var(--fg); user-select:text; }
   #own button { font-size:14px; padding:8px 14px; background:var(--sq); box-shadow:0 3px 0 #2c8a72; }
   #ownmsg { margin-top:6px; font-size:12px; opacity:.85; min-height:1em; }
+  #mine { z-index:5; position:fixed; top:50px; left:16px; display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600;
+    color:#fbe9d0; background:#1b1410a6; padding:5px 11px; border-radius:999px; pointer-events:none; }
+  #mine .bar { width:84px; height:8px; border-radius:6px; background:#ffffff26; overflow:hidden; }
+  #mine .bar i { display:block; height:100%; width:0; background:linear-gradient(90deg,#5fd3b5,#ffd54a); }
+  #mine .sqk { color:#ffd54a; }
+  #mine .bank { color:#5fd3b5; }
+  body:not(.playing) #mine { visibility:hidden; }
+  .sim { display:block; font-size:11px; opacity:.6; margin-top:6px; }
   #hudlive { font-size:12px; font-weight:600; color:var(--sq); }
   footer { position:fixed; bottom:8px; width:100%; text-align:center; font-size:12px; opacity:.55; pointer-events:none; }
   footer a { color:inherit; pointer-events:auto; }
@@ -112,6 +120,7 @@
   <span id="round" title="Current Squeekchain round — every round deals a new course"></span>
   <span class="r"><span id="best">Best 0</span><button id="mute" aria-label="Toggle sound">Sound on</button></span>
 </div>
+<div id="mine" title="Seeds are work. Enough work completes a Squeek block, which issues SQK on Squeekchain's real schedule. Pass a checkpoint to stake it."><span id="blkn">Block 1</span><span class="bar"><i id="blkbar"></i></span><span class="sqk" id="sqkpend">0</span><span class="bank" id="sqkbank">0 staked</span></div>
 <div id="overlay" class="intro">
   <header class="top">
     <div class="sub">A Squeekchain community game</div>
@@ -127,14 +136,14 @@
       <span class="chip" id="course">Best this round 0</span>
     </div>
   </main>
-  <div class="hint">Space / tap to hop (hold = higher, again = double hop) · ↓ or S to duck · dodge eagles and bats</div>
+  <div class="hint">Space / tap to hop (hold = higher, again = double hop) · ↓ or S to duck · seeds mine Squeek blocks · reach a checkpoint flag to stake your SQK</div>
   <details id="more">
     <summary>Squeekchain stats &amp; Squeek skin</summary>
     <section id="sq" aria-live="polite">
       <h2>Squeekchain economy <small id="sqnet">loading…</small></h2>
       <div id="stats"></div>
       <div id="own">
-        <b>Got a Squeek?</b> Paste a wallet address to unlock the Squeek skin. Read-only, nothing to connect or sign.
+        <b>Got a Squeek?</b> Paste a wallet address. Staked Squeeks boost the SQK you mine the same way they boost staking: x(1 + power / 1,000), Level 1 = x2, each level 2.2× more power. Read-only, nothing to connect or sign.
         <form id="ownform"><input id="addr" placeholder="0x…" autocomplete="off" spellcheck="false"><button type="submit">Check</button></form>
         <div id="ownmsg"></div>
       </div>
@@ -270,7 +279,27 @@
   let nextObstacleAt, nextSeedsAt, shake = 0, flash = 0, nextMile, banner = null, shield = false;
   let sinceGround = 0, bufferT = 0, holding = false, ducking = false;
   const ham = { x: 0, y: 0, vy: 0, jumps: 0, r: 26, squash: 1, blink: 2 };
-  const perks = { squeek: false, sqk: false }; // set by the read-only Squeekchain check below
+  const perks = { squeek: false, P: 0 }; // set by the read-only Squeekchain check below (P = Squeek power)
+
+  // ---------- Squeekchain economy model ----------
+  // Same rules as the real chain (docs.squeekchain.com → Rewards), refreshed from api.squeekchain.com:
+  //  · seeds are work units, like accepted wheel passages; a Squeek block needs workPerThousandBlocks / 1000 work
+  //  · each block issues SQK = base rate (R0, halved each of 3 periods of H blocks) + launch bonus G/N for the first N blocks
+  //  · Squeek power boosts SQK exactly like staking does: x(1 + P / P_ref), Level L power = 1000 × 2.2^(L−1)
+  //  · issued SQK only counts once a checkpoint runs; your staked SQK has power S / c × (1 + P / P_ref)
+  const ECO = { A: 1890000000, G: 105000000, N: 97020, H: 393470, b: 1999, height: 1999, wpk: 8238, c: 40, Pref: 1000, totalPower: 8.12e6 };
+  const R0 = () => { const r = Math.floor((ECO.A - ECO.G) * 4 / (7 * ECO.H)); return r - r % 4; };
+  function blockReward(b) {
+    const period = Math.floor(b / ECO.H), base = period < 3 ? R0() / 2 ** period : 0;
+    return base + (b < ECO.N ? ECO.G / ECO.N : 0);
+  }
+  const workPerBlock = () => Math.max(1, ECO.wpk / 1000);
+  const boost = () => 1 + perks.P / ECO.Pref;
+  const kfmt = n => Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(n);
+  let work = 0, blocksRun = 0, pending = 0, banked = 0, nextCp = 0;
+  const CP_EVERY = 10000; // a checkpoint flag every 100 m
+  let stake = +store.get('hd_stake') || 0; // your Dash stake across runs (simulated SQK, kept in this browser)
+  const dashPower = () => stake / ECO.c * boost() + perks.P;
   const SKIN = {
     normal: { body:'#e8a25c', belly:'#fbe7c8', ear:'#d98c45', cheek:'#f7c08a', tail:'#d98c45' },
     squeek: { body:'#2fbf9b', belly:'#d9fff3', ear:'#1f9a7c', cheek:'#8ff0d4', tail:'#1f9a7c' },
@@ -280,6 +309,7 @@
   function reset(keepArea) {
     courseRound = roundNow(); rng = mulberry32(hashStr('hamsterdash/round/' + courseRound));
     wheelMm = 0; wheelSeen = false;
+    work = 0; blocksRun = 0; pending = 0; banked = 0; nextCp = CP_EVERY;
     speed = 360; dist = 0; seeds = 0; obstacles = []; pickups = []; particles = []; popups = [];
     nextObstacleAt = 700; nextSeedsAt = 400; nextMile = 100; banner = null; shield = false;
     shake = 0; flash = 0; sinceGround = 0; bufferT = 0;
@@ -320,7 +350,7 @@
       puff(ham.x, ham.y, second ? 8 : 5, second ? '#ffe08a' : '#c9a27a');
     }
   }
-  function start() { $ov.classList.remove('intro'); audio(); ducking = false; state = 'play'; resize(); reset(); $ov.classList.add('hidden'); document.body.classList.add('playing'); renderHud(true); }
+  function start() { $ov.classList.remove('intro'); audio(); ducking = false; state = 'play'; resize(); reset(); $ov.classList.add('hidden'); document.body.classList.add('playing'); renderHud(true); renderMine(); }
   function pause() { if (state !== 'play') return; state = 'paused'; }
   function resume() { if (state !== 'paused') return; state = 'play'; last = performance.now(); }
 
@@ -456,6 +486,7 @@
       if (!banner && state === 'play') banner = { text: nextMile + ' m', life: 1.2 }; sfx.mile();
       nextMile += nextMile < 500 ? 100 : 250;
     }
+    if (state === 'play' && dist >= nextCp) checkpoint();
 
     const dx = speed * dt;
     for (const o of obstacles) o.x -= dx;
@@ -484,12 +515,43 @@
         p.got = true;
         if (p.gold) { shield = true; sfx.gold(); popup(p.x, p.y - 10, 'Shield', '#ffd54a'); puff(p.x, p.y, 10, '#ffd54a'); }
         else {
-          const v = (perks.sqk ? 2 : 1) * (wheelOn() ? 2 : 1); seeds += v; sfx.seed();
+          const v = wheelOn() ? 2 : 1; seeds += v; sfx.seed();
           popup(p.x, p.y - 10, '+' + v * 10, v > 1 ? '#5fd3b5' : '#ffe08a'); puff(p.x, p.y, 4, '#ffe08a');
+          if (state === 'play') addWork(v);
         }
       }
     }
     renderHud();
+  }
+
+  function addWork(v) {
+    work += v;
+    const need = workPerBlock();
+    while (work >= need) {
+      work -= need; blocksRun++;
+      const amt = blockReward(ECO.b + blocksRun) * boost();
+      pending += amt; sfx.mile();
+      popup(ham.x + 40 * S, ham.y - ham.r * S * 3, `Block mined +${kfmt(amt)} SQK`, perks.P ? '#5fd3b5' : '#ffd54a');
+    }
+    renderMine();
+  }
+  function checkpoint() {
+    nextCp += CP_EVERY;
+    if (pending > 0) {
+      banked += pending; sfx.gold();
+      banner = { text: `Checkpoint · ${kfmt(pending)} SQK staked`, life: 1.6 };
+      puff(ham.x, ham.y - ham.r * S, 14, '#5fd3b5');
+      pending = 0;
+    } else if (!banner) banner = { text: 'Checkpoint', life: 1 };
+    renderMine();
+  }
+  const $blkn = document.getElementById('blkn'), $blkbar = document.getElementById('blkbar'),
+        $sqkpend = document.getElementById('sqkpend'), $sqkbank = document.getElementById('sqkbank');
+  function renderMine() {
+    $blkn.textContent = 'Block ' + (blocksRun + 1);
+    $blkbar.style.width = Math.min(100, work / workPerBlock() * 100).toFixed(0) + '%';
+    $sqkpend.textContent = pending ? '+' + kfmt(pending) + ' SQK' : '';
+    $sqkbank.textContent = kfmt(banked) + ' staked';
   }
 
   // only touch the DOM when the number actually changes (avoids per-frame layout)
@@ -509,12 +571,17 @@
     setTimeout(() => {
       if (state !== 'over') return; // already restarted
       const rk = 'hd_round_' + courseRound, rb = Math.max(s, +store.get(rk) || 0); store.set(rk, rb);
-      const realM = wheelMm / 1000;
+      const realM = wheelMm / 1000, lost = pending;
+      stake += banked; store.set('hd_stake', Math.round(stake)); renderStake();
+      const eco = `Mined <b>${blocksRun}</b> Squeek block${blocksRun === 1 ? '' : 's'} · <b>${kfmt(banked)} SQK</b> staked` +
+        (lost ? ` · ${kfmt(lost)} lost before a checkpoint` : '') +
+        `<br>Dash stake ${kfmt(stake)} SQK · power ${kfmt(dashPower())}`;
       const race = wheelSeen
         ? `The real hamster ran <b>${realM.toFixed(1)} m</b> on its wheel during your run.`
         : '';
       $msg.innerHTML = (isBest ? '<b>New best!</b>' : 'Score') + `<span class="big">${s}</span>` +
-        `${seeds} seeds · ${Math.floor(dist / 100)} m · round best ${rb}` + (race ? `<small>${race}</small>` : '');
+        `${seeds} seeds · ${Math.floor(dist / 100)} m · round best ${rb}` + `<small>${eco}</small>` + (race ? `<small>${race}</small>` : '') +
+        '<span class="sim">SQK here is simulated with Squeekchain\'s real issuance and staking rules — not real tokens.</span>';
       document.body.classList.remove('playing'); tickClock();
       $play.textContent = 'Again';
       $ov.classList.remove('hidden'); $ov.scrollTop = 0;
@@ -748,6 +815,17 @@
     }
   }
 
+  function drawCheckpoint() {
+    if (state !== 'play' && state !== 'over') return;
+    const x = ham.x + (nextCp - dist);
+    if (x > W + 80 || x < -40) return;
+    const top = GROUND - 120 * S;
+    ctx.fillStyle = '#d9c3a0'; ctx.fillRect(x - 3 * S, top, 6 * S, GROUND - top);
+    ctx.fillStyle = '#5fd3b5'; ctx.beginPath(); ctx.moveTo(x + 3 * S, top);
+    ctx.lineTo(x + 52 * S, top + 14 * S + Math.sin(t * 6) * 3 * S); ctx.lineTo(x + 3 * S, top + 30 * S); ctx.fill();
+    ctx.fillStyle = '#103a30'; ctx.font = `700 ${Math.round(11 * S)}px Fredoka, sans-serif`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('STAKE', x + 7 * S, top + 15 * S);
+  }
   function drawPickups() {
     for (const p of pickups) {
       const bob = Math.sin(t * 6 + p.x * 0.05) * 3;
@@ -802,6 +880,14 @@
       const c = await (await fetch('https://api.squeekchain.com/v1/core', { cache: 'no-store' })).json();
       const g = +c.configuration?.genesisTimestamp, d = +c.configuration?.roundDuration;
       if (g > 0 && d > 0) { ROUND.genesis = g; ROUND.duration = d; }
+      const wpk = +c.core?.workPerThousandBlocks, h = +c.core?.blockHeight;
+      if (wpk > 0) ECO.wpk = wpk;
+      if (h > 0) {
+        if (h > ECO.height && state === 'play') { // the real hamster finished a block while you play: free block
+          banner = { text: `Real Squeek block #${h}!`, life: 2 }; addWork(workPerBlock());
+        }
+        ECO.height = h;
+      }
     } catch (e) {}
   }
   async function loadLive() {
@@ -830,6 +916,7 @@
     $course.textContent = `Best this round ${+store.get('hd_round_' + r) || 0}`;
   }
   loadCore().then(tickClock); loadLive();
+  setInterval(() => { if (!document.hidden) loadCore(); }, 20000);
   setInterval(loadLive, 5000); setInterval(tickClock, 1000);
 
   // ---------- Squeekchain (read-only) ----------
@@ -856,11 +943,26 @@
       const s = await r.json();
       const d = s.asset?.decimals ?? 18, sym = s.asset?.symbol || 'SQK';
       if (s.asset?.address) SQ.token = s.asset.address;
+      const fb = +s.mining?.fundedBlocks; if (fb > 0) ECO.b = fb;
+      const sch = s.mining?.schedule;
+      if (sch && +sch.halvingBlocks > 0) {
+        ECO.A = units(sch.allowanceBaseUnits, d); ECO.G = units(sch.launchBonusBaseUnits, d);
+        ECO.N = +sch.bonusBlocks || ECO.N; ECO.H = +sch.halvingBlocks;
+      }
+      const np = units(s.staking?.totalNftPower, d), sp = units(s.staking?.totalSqkPower, d);
+      if (np + sp > 0) ECO.totalPower = np + sp;
+      if (+s.staking?.sqkPerPower) ECO.c = units(s.staking.sqkPerPower, d);
+      if (+s.staking?.referencePower) ECO.Pref = units(s.staking.referencePower, d);
+      const period = Math.floor(ECO.b / ECO.H);
       const rows = [
         ['Settled on-chain round', '#' + (s.lifecycle?.currentRound ?? s.capabilities?.core?.currentRound ?? '?')],
         [sym + ' live supply', fmt(units(s.supply?.liveSupplyBaseUnits, d))],
         [sym + ' staked', fmt(units(s.staking?.totalStakedBaseUnits, d))],
         ['Squeeks alive', s.nft?.live ? fmt(+s.nft.live) : '?'],
+        ['SQK per Squeek block now', fmt(blockReward(ECO.b))],
+        ['Issuance', (ECO.b < ECO.N ? 'launch bonus + ' : '') + (period < 3 ? 'period ' + (period + 1) + ' of 3' : 'ended')],
+        ['Seeds (work) per block', workPerBlock().toFixed(1)],
+        ['Your Dash stake', kfmt(stake) + ' SQK'],
       ];
       $stats.innerHTML = rows.map(([k, v]) => `<div><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join('');
       $net.textContent = (s.chain?.target || 'sepolia') + ' · block ' + (s.chain?.safeThroughBlock || '?');
@@ -868,6 +970,7 @@
       $net.textContent = 'offline — retrying';
     }
   }
+  function renderStake() { if ($stats.innerHTML) loadEconomy(); }
   loadEconomy(); setInterval(loadEconomy, 60000);
 
   async function ethCall(to, data) {
@@ -889,12 +992,32 @@
     addr = (addr || '').trim();
     if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) { $ownmsg.textContent = 'That is not a valid 0x address.'; return; }
     $ownmsg.textContent = 'Checking Squeekchain…';
+    let tokens = null, acct = null;
+    try { // indexed account: Squeek levels in wallet + staking, real power
+      acct = await (await fetch(`https://api.squeekchain.com/v1/accounts/${addr.toLowerCase()}?limit=100`, { cache: 'no-store' })).json();
+      if (acct.status === 'available') tokens = acct.tokens || [];
+    } catch (e) {}
     try {
-      const [nfts, sqk] = await Promise.all([balanceOf(SQ.collection, addr), balanceOf(SQ.token, addr)]);
-      perks.squeek = nfts > 0n; perks.sqk = sqk > 0n;
+      let P = 0, held = 0, staked = 0, levels = [];
+      if (tokens) { // power counts deposited Squeeks only, exactly like Squeekchain staking
+        for (const tk of tokens) levels.push(+tk.level || 1);
+        staked = +acct.tokenCounts?.staking || 0; held = staked + (+acct.tokenCounts?.wallet || 0) || levels.length;
+        P = acct.power ? units(acct.power.nftPower) : 0;
+      } else { // fallback: plain balance on the collection (no staking info)
+        held = Number(await balanceOf(SQ.collection, addr));
+      }
+      perks.squeek = held > 0; perks.P = P;
       const parts = [];
-      parts.push(perks.squeek ? `${nfts} Squeek${nfts > 1n ? 's' : ''} found — Squeek skin unlocked!` : 'No Squeek in this wallet.');
-      parts.push(perks.sqk ? `${fmt(units(sqk))} SQK — seeds count double.` : 'No SQK.');
+      if (held) {
+        levels.sort((x, y) => y - x);
+        parts.push(`${held} Squeek${held > 1 ? 's' : ''}${levels.length ? ' (best L' + levels[0] + ')' : ''} · Squeek skin on.`);
+        parts.push(P ? `${staked} staked · power ${fmt(P)} → mined SQK x${boost().toFixed(2)}.`
+                     : 'None staked, so no boost: stake a Squeek on Squeekchain and its power multiplies your SQK here (Level 1 = x2).');
+      } else parts.push('No Squeek here, so SQK earns at the base rate.');
+      if (acct && acct.power) {
+        const W = units(acct.power.nftPower) + units(acct.power.sqkPower);
+        if (W > 0) parts.push(`Real staking power ${fmt(W)} = ${(W / ECO.totalPower * 100).toFixed(3)}% of all → ~${(W / ECO.totalPower * blockReward(ECO.b)).toFixed(2)} real SQK per block.`);
+      }
       $ownmsg.textContent = parts.join(' ');
       store.set('hd_addr', addr);
     } catch (e) {
@@ -915,7 +1038,7 @@
       update(dt);
       ctx.save();
       if (shake > 0) ctx.translate((Math.random() - .5) * 14 * shake / 0.35, (Math.random() - .5) * 10 * shake / 0.35);
-      drawBg(); drawPickups(); drawObstacles(); drawHamster(); drawFx();
+      drawBg(); drawCheckpoint(); drawPickups(); drawObstacles(); drawHamster(); drawFx();
       ctx.restore();
     }
     requestAnimationFrame(frame);
