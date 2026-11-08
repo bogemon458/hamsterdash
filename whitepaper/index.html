@@ -38,7 +38,7 @@
 
   /* header */
   .top { position:sticky; top:0; z-index:5; background:rgba(14,13,11,.84); backdrop-filter:saturate(1.4) blur(10px); border-bottom:1px solid var(--line); font-family:var(--sans); }
-  .top .in { max-width:1180px; margin:0 auto; padding:12px 24px; display:flex; align-items:center; gap:24px; }
+  .top .in { padding:12px 28px; display:flex; align-items:center; gap:24px; }
   .brand { display:flex; align-items:center; gap:10px; font-weight:600; color:var(--fg); text-decoration:none; font-size:15px; }
   .brand svg { width:22px; height:22px; }
   .brand small { color:var(--faint); font-weight:500; }
@@ -50,9 +50,12 @@
   .track { height:2px; } .track i { display:block; height:100%; width:0; background:var(--sq); }
 
   /* layout */
-  .page { max-width:1180px; margin:0 auto; padding:0 24px; display:grid; grid-template-columns:210px minmax(0, 740px); gap:72px; justify-content:center; }
-  @media (max-width:1000px) { .page { grid-template-columns:minmax(0, 740px); gap:0; padding:0 18px; } aside.toc { display:none; } }
-  aside.toc { position:sticky; top:76px; align-self:start; padding-top:64px; font-family:var(--sans); font-size:13px; max-height:calc(100vh - 80px); overflow:auto; }
+  /* contents pinned to the left edge; text starts right next to it and reads left-aligned */
+  .page { padding:0 48px 0 calc(260px + 56px); }
+  main { max-width:940px; }
+  aside.toc { position:fixed; left:0; top:63px; bottom:0; width:260px; padding:40px 24px 32px 28px; border-right:1px solid var(--line); background:var(--bg);
+    font-family:var(--sans); font-size:13.5px; overflow-y:auto; }
+  @media (max-width:1000px) { .page { padding:0 18px; } main { max-width:none; } aside.toc { display:none; } }
   aside.toc .t { font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); font-weight:600; margin-bottom:12px; }
   aside.toc a { display:flex; gap:10px; color:var(--dim); text-decoration:none; padding:4px 0 4px 12px; border-left:1px solid var(--line); line-height:1.45; }
   aside.toc a span { font-family:var(--mono); font-size:11px; color:var(--faint); padding-top:1px; min-width:18px; }
@@ -155,7 +158,9 @@
   dl.gloss dt:last-of-type, dl.gloss dd:last-of-type { border-bottom:0; }
   @media (max-width:600px) { dl.gloss { grid-template-columns:1fr; } dl.gloss dt { border-bottom:0; padding-bottom:2px; } }
   footer { border-top:1px solid var(--line); font-family:var(--sans); }
-  footer .in { max-width:1180px; margin:0 auto; padding:28px 24px 48px; color:var(--faint); font-size:13px; display:flex; flex-wrap:wrap; gap:8px 24px; justify-content:space-between; }
+  footer { margin-left:260px; }
+  @media (max-width:1000px) { footer { margin-left:0; } }
+  footer .in { max-width:none; padding:28px 48px 48px 56px; color:var(--faint); font-size:13px; display:flex; flex-wrap:wrap; gap:8px 24px; justify-content:space-between; }
   footer a { color:var(--dim); text-decoration:none; } footer a:hover { color:var(--fg); }
   footer .fl { display:flex; align-items:center; gap:18px; }
   footer .gh { display:inline-flex; align-items:center; gap:6px; }
