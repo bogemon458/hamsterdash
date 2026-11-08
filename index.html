@@ -118,6 +118,31 @@
   #mine .bank { color:#5fd3b5; }
   body:not(.playing) #mine { visibility:hidden; }
   .sim { display:block; font-size:11px; opacity:.6; margin-top:6px; }
+  /* results: one compact, centred column on a dimmed backdrop */
+  #overlay.results { justify-content:center; gap:16px; padding:24px 16px; background:rgba(14,10,7,.62); backdrop-filter:blur(3px); }
+  #overlay.results .bottom { margin-top:0; gap:10px; }
+  #overlay.results h1 { font-size:clamp(34px, 6vw, 48px); text-shadow:0 3px 0 #7a4a16; }
+  #overlay.results .sub, #overlay.results #msg, #overlay.results .keys, #overlay.results #more { display:none; }
+  #result { width:100%; max-width:440px; background:rgba(27,20,16,.92); border:1px solid #ffffff1c; border-radius:18px; padding:18px 20px 16px;
+    box-shadow:0 18px 50px #0009; text-align:left; }
+  #result[hidden] { display:none; }
+  #result .head { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  #result .lbl { font-size:12px; letter-spacing:2px; text-transform:uppercase; opacity:.65; font-weight:600; }
+  #result .badge { font-size:12px; font-weight:700; color:#2a1a0c; background:var(--accent); padding:3px 10px; border-radius:999px; }
+  #result .score { font-size:56px; font-weight:700; line-height:1; margin:6px 0 14px; color:#fff; }
+  #result .grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:1px; background:#ffffff14; border-radius:12px; overflow:hidden; }
+  #result .grid div { background:#1f1712; padding:9px 10px; }
+  #result .grid b { display:block; font-size:18px; color:#fff; line-height:1.2; }
+  #result .grid span { font-size:11px; opacity:.6; }
+  #result .eco { margin-top:12px; display:grid; grid-template-columns:1fr auto; gap:5px 12px; font-size:14px; }
+  #result .eco span { opacity:.7; }
+  #result .eco b { text-align:right; font-weight:600; color:#fff; }
+  #result .eco b.sq { color:var(--sq); } #result .eco b.lost { color:#ff8f6b; }
+  #result .race { margin-top:10px; font-size:13px; color:#bff5e6; background:#5fd3b514; border:1px solid #5fd3b533; border-radius:10px; padding:7px 10px; }
+  #result .fine { margin-top:10px; font-size:11px; opacity:.5; line-height:1.4; }
+  @media (max-width:420px) { #result .grid { grid-template-columns:1fr 1fr; } #result .score { font-size:46px; } }
+  .keys { display:flex; flex-wrap:wrap; justify-content:center; gap:6px 14px; font-size:12.5px; opacity:.8; text-shadow:0 2px 6px #000c; }
+  .keys kbd { font:inherit; font-size:11px; font-weight:700; padding:1px 6px; border-radius:5px; background:#ffffff1a; border:1px solid #ffffff2a; margin-right:4px; }
   #hudlive { font-size:12px; font-weight:600; color:var(--sq); }
   footer { position:fixed; bottom:8px; width:100%; text-align:center; font-size:12px; opacity:.55; pointer-events:none; }
   footer a { color:inherit; pointer-events:auto; }
@@ -137,6 +162,7 @@
     <h1 id="title">Hamster Dash</h1>
     <p id="msg" class="tag">Race the real Squeekchain hamster.</p>
   </header>
+  <section id="result" hidden aria-live="polite"></section>
   <div class="bottom">
   <main class="card">
     <button id="play">Play</button>
@@ -146,7 +172,7 @@
       <span class="chip" id="course">Best this round 0</span>
     </div>
   </main>
-  <div class="hint">Space / tap to hop (hold = higher, again = double hop) · ↓ or S to duck · land on eagles &amp; bats to stomp them · seeds mine Squeek blocks · reach a checkpoint flag to stake your SQK</div>
+  <div class="keys"><span><kbd>Space</kbd>/ tap: hop, hold higher, twice = double</span><span><kbd>↓</kbd>duck</span><span><kbd>Land</kbd>on eagles &amp; bats to stomp</span><span><kbd>Flag</kbd>stakes your SQK</span></div>
   <details id="more">
     <summary>Squeekchain stats &amp; Squeek skin</summary>
     <section id="sq" aria-live="polite">
@@ -169,7 +195,7 @@
   'use strict';
   const cv = document.getElementById('c'), ctx = cv.getContext('2d', { alpha: false });
   const $score = document.getElementById('score'), $best = document.getElementById('best');
-  const $ov = document.getElementById('overlay'), $msg = document.getElementById('msg'), $play = document.getElementById('play');
+  const $ov = document.getElementById('overlay'), $msg = document.getElementById('msg'), $result = document.getElementById('result'), $play = document.getElementById('play');
   const $mute = document.getElementById('mute'), $round = document.getElementById('round');
 
   // ---------- layout ----------
@@ -630,7 +656,7 @@
       puff(ham.x, ham.y, second ? 8 : 5, second ? '#ffe08a' : '#c9a27a');
     }
   }
-  function start() { $ov.classList.remove('intro'); audio(); ducking = false; state = 'play'; resize(); reset(); $ov.classList.add('hidden'); document.body.classList.add('playing'); renderHud(true); renderMine(); }
+  function start() { $ov.classList.remove('intro', 'results'); $result.hidden = true; audio(); ducking = false; state = 'play'; resize(); reset(); $ov.classList.add('hidden'); document.body.classList.add('playing'); renderHud(true); renderMine(); }
   function pause() { if (state !== 'play') return; state = 'paused'; }
   function resume() { if (state !== 'paused') return; state = 'play'; last = performance.now(); }
 
@@ -880,15 +906,21 @@
       const rk = 'hd_round_' + courseRound, rb = Math.max(s, +store.get(rk) || 0); store.set(rk, rb);
       const realM = wheelMm / 1000, lost = pending;
       stake += banked; store.set('hd_stake', Math.round(stake)); renderStake();
-      const eco = `Mined <b>${blocksRun}</b> Squeek block${blocksRun === 1 ? '' : 's'} · <b>${kfmt(banked)} SQK</b> staked` +
-        (lost ? ` · ${kfmt(lost)} lost before a checkpoint` : '') +
-        `<br>Dash stake ${kfmt(stake)} SQK · power ${kfmt(dashPower())}`;
       const race = wheelSeen
         ? `The real hamster ran <b>${realM.toFixed(1)} m</b> on its wheel during your run.`
         : '';
-      $msg.innerHTML = (isBest ? '<b>New best!</b>' : 'Score') + `<span class="big">${s}</span>` +
-        `${seeds} seeds · ${Math.floor(dist / 100)} m` + (stomps ? ` · ${stomps} stomp${stomps === 1 ? '' : 's'} (+${bonus})` : '') + ` · round best ${rb}` + `<small>${eco}</small>` + (race ? `<small>${race}</small>` : '') +
-        '<span class="sim">SQK here is simulated with Squeekchain\'s real issuance and staking rules — not real tokens.</span>';
+      $result.innerHTML =
+        `<div class="head"><span class="lbl">Run over · Round ${courseRound}</span>${isBest ? '<span class="badge">New best</span>' : ''}</div>` +
+        `<div class="score">${s.toLocaleString('en')}</div>` +
+        `<div class="grid"><div><b>${seeds}</b><span>seeds</span></div><div><b>${Math.floor(dist / 100)} m</b><span>distance</span></div>` +
+        `<div><b>${stomps}</b><span>stomps${bonus ? ' (+' + bonus + ')' : ''}</span></div><div><b>${rb.toLocaleString('en')}</b><span>round best</span></div></div>` +
+        `<div class="eco"><span>Squeek blocks mined</span><b>${blocksRun}</b>` +
+        `<span>SQK staked this run</span><b class="sq">${kfmt(banked)}</b>` +
+        (lost ? `<span>Lost before a checkpoint</span><b class="lost">${kfmt(lost)}</b>` : '') +
+        `<span>Dash stake · power</span><b>${kfmt(stake)} · ${kfmt(dashPower())}</b></div>` +
+        (race ? `<div class="race">${race}</div>` : '') +
+        '<div class="fine">SQK here is simulated with Squeekchain\'s real issuance and staking rules. It is not a real token.</div>';
+      $result.hidden = false; $ov.classList.add('results');
       document.body.classList.remove('playing'); tickClock();
       $play.textContent = 'Again';
       $ov.classList.remove('hidden'); $ov.scrollTop = 0;
