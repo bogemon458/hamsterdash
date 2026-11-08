@@ -5,12 +5,12 @@
 <meta name="squeekchain-project" content="478ab808-9282-4b50-b1b0-4aa3b852f280">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hamster Dash Whitepaper</title>
-<meta name="description" content="How Hamster Dash works: round-seeded courses, the live Squeekchain wheel, and an in-game economy that follows Squeekchain's real issuance and staking rules.">
-<meta name="theme-color" content="#1b1410">
-<meta property="og:type" content="website">
+<meta name="description" content="Hamster Dash: a deterministic, read-only endless runner that models Squeekchain's proof-of-wheel economy: round-seeded courses, live wheel coupling, real issuance and staking math.">
+<meta name="theme-color" content="#0e0d0b">
+<meta property="og:type" content="article">
 <meta property="og:site_name" content="Hamster Dash">
 <meta property="og:title" content="Hamster Dash Whitepaper">
-<meta property="og:description" content="How Hamster Dash works: round-seeded courses, the live Squeekchain wheel, and an in-game economy that follows Squeekchain's real issuance and staking rules.">
+<meta property="og:description" content="A deterministic, read-only endless runner that models Squeekchain's proof-of-wheel economy: round-seeded courses, live wheel coupling, real issuance and staking math.">
 <meta property="og:url" content="https://hamsterdash.site/whitepaper/">
 <meta property="og:image" content="https://hamsterdash.site/assets/og.png?v=1">
 <meta property="og:image:width" content="1200">
@@ -19,496 +19,596 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><ellipse cx='50' cy='58' rx='40' ry='32' fill='%23e8a25c'/><circle cx='34' cy='26' r='11' fill='%23d98c45'/><circle cx='64' cy='28' r='10' fill='%23d98c45'/><circle cx='70' cy='50' r='6' fill='%231a0f08'/><ellipse cx='60' cy='66' rx='22' ry='17' fill='%23fbe7c8'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#0f0e0c; --surface:#171512; --raised:#1d1a16; --line:#2b2722; --line2:#3a342d; --fg:#ece7df; --dim:#a39b90; --faint:#6f685f;
-    --accent:#f2a33a; --sq:#5fd3b5; --mono:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+  :root {
+    --bg:#0e0d0b; --surface:#151310; --raised:#1b1915; --line:#28241f; --line2:#38322b;
+    --fg:#ece7df; --text:#d6d0c6; --dim:#9f978b; --faint:#6c655c;
+    --accent:#f2a33a; --sq:#5fd3b5; --warn:#e8b04a;
+    --sans:Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --serif:"Source Serif 4", Georgia, "Times New Roman", serif;
+    --mono:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
   * { box-sizing:border-box; margin:0; padding:0; }
   html { scroll-behavior:smooth; }
-  body { background:var(--bg); color:var(--fg); font-family:Inter, system-ui, -apple-system, "Segoe UI", sans-serif; font-size:16px; line-height:1.7;
-    -webkit-font-smoothing:antialiased; font-feature-settings:"cv11", "ss01"; }
+  body { background:var(--bg); color:var(--text); font-family:var(--serif); font-size:17.5px; line-height:1.72; -webkit-font-smoothing:antialiased; }
   a { color:var(--sq); text-decoration-thickness:1px; text-underline-offset:3px; }
-  b, strong { font-weight:600; color:#fff; }
+  b, strong { font-weight:600; color:var(--fg); }
+  em { color:var(--fg); }
+
   /* header */
-  .top { position:sticky; top:0; z-index:5; background:rgba(15,14,12,.82); backdrop-filter:saturate(1.4) blur(10px); border-bottom:1px solid var(--line); }
-  .top .in { max-width:1160px; margin:0 auto; padding:12px 24px; display:flex; align-items:center; gap:28px; }
-  .brand { display:flex; align-items:center; gap:10px; font-weight:600; color:var(--fg); text-decoration:none; font-size:15px; letter-spacing:-.01em; }
-  .brand svg { width:24px; height:24px; }
+  .top { position:sticky; top:0; z-index:5; background:rgba(14,13,11,.84); backdrop-filter:saturate(1.4) blur(10px); border-bottom:1px solid var(--line); font-family:var(--sans); }
+  .top .in { max-width:1180px; margin:0 auto; padding:12px 24px; display:flex; align-items:center; gap:24px; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:600; color:var(--fg); text-decoration:none; font-size:15px; }
+  .brand svg { width:22px; height:22px; }
   .brand small { color:var(--faint); font-weight:500; }
   .links { display:flex; gap:22px; margin-left:auto; align-items:center; font-size:14px; }
   .links a { color:var(--dim); text-decoration:none; } .links a:hover { color:var(--fg); }
   .links a.play { color:#1a1208; background:var(--accent); font-weight:600; padding:7px 16px; border-radius:8px; }
-  .links a.play:hover { background:#f7b45a; color:#1a1208; }
-  @media (max-width:640px) { .links .hide-s { display:none; } .top .in { padding:10px 16px; } }
-  .track { position:relative; height:2px; }
-  .track i { position:absolute; left:0; top:0; bottom:0; width:0; background:var(--sq); }
-  #runner { display:none; }
+  .links a.play:hover { background:#f7b45a; }
+  @media (max-width:700px) { .links .hide-s { display:none; } .top .in { padding:10px 16px; } }
+  .track { height:2px; } .track i { display:block; height:100%; width:0; background:var(--sq); }
+
   /* layout */
-  .page { max-width:1160px; margin:0 auto; padding:0 24px; display:grid; grid-template-columns:200px minmax(0, 760px); gap:64px; justify-content:center; }
-  @media (max-width:980px) { .page { grid-template-columns:minmax(0, 760px); gap:0; padding:0 16px; } aside.toc { display:none; } }
-  aside.toc { position:sticky; top:84px; align-self:start; padding-top:56px; font-size:13.5px; }
-  aside.toc .t { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); font-weight:600; margin-bottom:12px; }
-  aside.toc a { display:flex; gap:10px; color:var(--dim); text-decoration:none; padding:5px 0 5px 12px; border-left:1px solid var(--line); line-height:1.4; }
-  aside.toc a span { font-family:var(--mono); font-size:11.5px; color:var(--faint); padding-top:1px; }
+  .page { max-width:1180px; margin:0 auto; padding:0 24px; display:grid; grid-template-columns:210px minmax(0, 740px); gap:72px; justify-content:center; }
+  @media (max-width:1000px) { .page { grid-template-columns:minmax(0, 740px); gap:0; padding:0 18px; } aside.toc { display:none; } }
+  aside.toc { position:sticky; top:76px; align-self:start; padding-top:64px; font-family:var(--sans); font-size:13px; max-height:calc(100vh - 80px); overflow:auto; }
+  aside.toc .t { font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); font-weight:600; margin-bottom:12px; }
+  aside.toc a { display:flex; gap:10px; color:var(--dim); text-decoration:none; padding:4px 0 4px 12px; border-left:1px solid var(--line); line-height:1.45; }
+  aside.toc a span { font-family:var(--mono); font-size:11px; color:var(--faint); padding-top:1px; min-width:18px; }
   aside.toc a:hover, aside.toc a.on { color:var(--fg); border-left-color:var(--sq); }
-  main { padding:56px 0 96px; min-width:0; }
-  /* hero */
-  .kicker { font-family:var(--mono); font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--sq); }
-  .hero { display:grid; grid-template-columns:1fr 200px; gap:40px; align-items:center; }
-  h1 { font-size:clamp(34px, 6vw, 48px); line-height:1.1; letter-spacing:-.025em; font-weight:700; margin:14px 0 16px; color:#fff; }
-  .lead { font-size:18px; line-height:1.65; color:var(--dim); }
-  .hero canvas { width:200px; height:200px; display:block; }
-  .wheelcap { text-align:center; font-size:12px; color:var(--faint); margin-top:4px; line-height:1.5; }
-  .wheelcap b { color:var(--sq); font-weight:500; }
-  @media (max-width:720px) { .hero { grid-template-columns:1fr; gap:8px; } .hero .w { order:-1; justify-self:start; } .hero canvas { width:140px; height:140px; } .wheelcap { text-align:left; } }
-  .meta { display:flex; flex-wrap:wrap; gap:0; margin:28px 0 0; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
-  .meta div { flex:1 1 140px; padding:12px 16px; border-right:1px solid var(--line); }
+  aside.toc .grp { margin-top:14px; }
+  main { padding:64px 0 96px; min-width:0; }
+
+  /* title block */
+  .kicker { font-family:var(--mono); font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--sq); }
+  h1 { font-family:var(--sans); font-size:clamp(32px, 5.2vw, 46px); line-height:1.12; letter-spacing:-.028em; font-weight:700; margin:14px 0 14px; color:#fff; }
+  h1 .sub { display:block; color:var(--dim); font-weight:500; font-size:.52em; letter-spacing:-.01em; margin-top:10px; line-height:1.35; }
+  .byline { font-family:var(--sans); font-size:14px; color:var(--dim); display:flex; flex-wrap:wrap; gap:6px 18px; }
+  .byline b { color:var(--fg); font-weight:500; }
+  .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; font-family:var(--sans); font-size:14px; }
+  .btn { display:inline-flex; align-items:center; gap:8px; padding:9px 16px; border-radius:8px; border:1px solid var(--line2); color:var(--fg); text-decoration:none; background:var(--surface); cursor:pointer; font:inherit; }
+  .btn:hover { border-color:var(--faint); }
+  .btn.pri { background:var(--accent); color:#1a1208; border-color:var(--accent); font-weight:600; }
+  .btn svg { width:15px; height:15px; }
+
+  .meta { display:grid; grid-template-columns:repeat(4, 1fr); margin:32px 0 0; border:1px solid var(--line); border-radius:10px; overflow:hidden; font-family:var(--sans); }
+  .meta div { padding:12px 16px; border-right:1px solid var(--line); }
   .meta div:last-child { border-right:0; }
-  .meta span { display:block; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); font-weight:600; }
-  .meta b { font-size:14px; font-weight:500; color:var(--fg); }
-  .abstract { margin:36px 0 0; padding:22px 24px; background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:4px 10px 10px 4px; }
-  .abstract .t { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); font-weight:600; margin-bottom:8px; }
+  .meta span { display:block; font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); font-weight:600; }
+  .meta b { font-size:14px; font-weight:500; }
+  @media (max-width:700px) { .meta { grid-template-columns:1fr 1fr; } .meta div:nth-child(2) { border-right:0; } .meta div:nth-child(-n+2) { border-bottom:1px solid var(--line); } }
+
+  .abstract { margin:36px 0 0; padding:24px 28px; background:var(--surface); border:1px solid var(--line); border-radius:10px; }
+  .abstract .t, .label { font-family:var(--sans); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:600; margin-bottom:10px; }
   .abstract p { margin:0; color:var(--fg); }
-  /* live stats */
-  .live { display:grid; grid-template-columns:repeat(4, 1fr); margin:24px 0 0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--surface); }
+  .kw { margin-top:14px !important; font-family:var(--sans); font-size:13px; color:var(--dim) !important; }
+
+  .livehead { display:flex; align-items:center; gap:8px; margin-top:32px; font-family:var(--sans); font-size:11px; color:var(--faint); letter-spacing:.1em; text-transform:uppercase; font-weight:600; }
+  .livehead i { width:7px; height:7px; border-radius:50%; background:var(--sq); box-shadow:0 0 0 3px #5fd3b533; animation:pulse 2s infinite; }
+  @keyframes pulse { 50% { box-shadow:0 0 0 6px #5fd3b500; } }
+  .live { display:grid; grid-template-columns:repeat(4, 1fr); margin:10px 0 0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--surface); font-family:var(--sans); }
   .live div { padding:16px 18px; border-right:1px solid var(--line); }
   .live div:last-child { border-right:0; }
-  .live b { display:block; font-family:var(--mono); font-size:22px; font-weight:500; color:#fff; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+  .live b { display:block; font-family:var(--mono); font-size:21px; font-weight:500; color:#fff; letter-spacing:-.02em; font-variant-numeric:tabular-nums; white-space:nowrap; }
   .live span { font-size:12.5px; color:var(--dim); line-height:1.4; display:block; margin-top:4px; }
-  .livehead { display:flex; align-items:center; gap:8px; margin-top:28px; font-size:12px; color:var(--faint); letter-spacing:.06em; text-transform:uppercase; font-weight:600; }
-  .livehead i { width:7px; height:7px; border-radius:50%; background:var(--sq); box-shadow:0 0 0 3px #5fd3b533; }
-  @media (max-width:720px) { .live { grid-template-columns:1fr 1fr; } .live div:nth-child(2) { border-right:0; } .live div:nth-child(-n+2) { border-bottom:1px solid var(--line); } }
-  nav.toc { display:none; }
-  /* sections */
-  section { margin-top:72px; padding-top:28px; border-top:1px solid var(--line); scroll-margin-top:72px; }
-  h2 { font-size:26px; line-height:1.25; letter-spacing:-.02em; font-weight:650; color:#fff; margin-bottom:16px; display:flex; align-items:baseline; gap:14px; }
-  h2 span { font-family:var(--mono); font-size:13px; font-weight:500; color:var(--sq); letter-spacing:0; }
-  h3 { font-size:17px; font-weight:600; letter-spacing:-.01em; margin:32px 0 8px; color:#fff; }
-  p, ul, ol { margin-bottom:16px; color:#d9d3ca; }
-  ul, ol { padding-left:20px; }
+  @media (max-width:700px) { .live { grid-template-columns:1fr 1fr; } .live div:nth-child(2) { border-right:0; } .live div:nth-child(-n+2) { border-bottom:1px solid var(--line); } }
+
+  /* body */
+  section { margin-top:76px; scroll-margin-top:72px; }
+  h2 { font-family:var(--sans); font-size:25px; line-height:1.25; letter-spacing:-.02em; font-weight:650; color:#fff; margin-bottom:18px; padding-top:28px; border-top:1px solid var(--line); display:flex; align-items:baseline; gap:14px; }
+  h2 .n { font-family:var(--mono); font-size:13px; font-weight:500; color:var(--sq); }
+  h3 { font-family:var(--sans); font-size:16.5px; font-weight:600; letter-spacing:-.01em; margin:34px 0 8px; color:#fff; scroll-margin-top:72px; }
+  h3 .n { font-family:var(--mono); font-size:12.5px; color:var(--faint); font-weight:500; margin-right:8px; }
+  p, ul, ol { margin-bottom:16px; }
+  ul, ol { padding-left:22px; }
   li { margin-bottom:6px; padding-left:4px; }
   li::marker { color:var(--faint); }
-  code { font-family:var(--mono); font-size:.84em; background:var(--raised); border:1px solid var(--line); padding:1px 6px; border-radius:5px; color:#f1d9b5; overflow-wrap:anywhere; }
-  pre { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px 18px; overflow-x:auto; margin:4px 0 20px; font-size:13px; line-height:1.65; }
-  pre code { background:none; border:0; padding:0; color:#e6dccb; }
-  .tbl { overflow-x:auto; margin:4px 0 20px; border:1px solid var(--line); border-radius:10px; }
+  code { font-family:var(--mono); font-size:.8em; background:var(--raised); border:1px solid var(--line); padding:1px 5px; border-radius:5px; color:#f1d9b5; overflow-wrap:anywhere; }
+  pre { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px 18px; overflow-x:auto; margin:6px 0 20px; font-size:13px; line-height:1.65; }
+  pre code { background:none; border:0; padding:0; color:#e6dccb; font-size:inherit; }
+  .eq { display:flex; align-items:center; gap:16px; margin:8px 0 20px; padding:14px 20px; background:var(--surface); border:1px solid var(--line); border-left:2px solid var(--sq); border-radius:4px 10px 10px 4px; font-family:var(--serif); font-size:18px; color:var(--fg); overflow-x:auto; }
+  .eq .f { flex:1; white-space:nowrap; }
+  .eq var { font-style:italic; }
+  .eq sub, .eq sup { font-size:.7em; }
+  .eq .no { font-family:var(--mono); font-size:12px; color:var(--faint); }
+  .eq .w { font-family:var(--sans); font-size:13px; color:var(--dim); white-space:normal; display:block; margin-top:4px; }
+  .def { margin:8px 0 20px; padding:14px 20px; border:1px solid var(--line); border-radius:10px; }
+  .def .label { color:var(--sq); margin-bottom:6px; }
+  .def p:last-child { margin-bottom:0; }
+  .tbl { overflow-x:auto; margin:6px 0 22px; border:1px solid var(--line); border-radius:10px; font-family:var(--sans); }
   table { border-collapse:collapse; width:100%; font-size:14px; font-variant-numeric:tabular-nums; }
-  th, td { text-align:left; padding:10px 14px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th, td { text-align:left; padding:10px 14px; border-bottom:1px solid var(--line); vertical-align:top; line-height:1.5; }
   tr:last-child td { border-bottom:0; }
-  th { background:var(--surface); color:var(--dim); font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:.08em; }
-  td { color:#d9d3ca; }
-  .note { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:14px 18px; margin:20px 0; font-size:14px; color:var(--dim); }
-  .flow { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:8px 0 4px; font-size:13.5px; }
-  .flow div { background:var(--surface); border:1px solid var(--line2); border-radius:6px; padding:6px 12px; font-weight:500; }
-  .flow i { color:var(--faint); font-style:normal; }
-  .anim { width:100%; height:200px; display:block; background:var(--surface); border:1px solid var(--line); border-radius:10px; margin:16px 0 0; }
-  .anim.short { height:180px; }
-  .cap { font-size:13px; color:var(--dim); margin:10px 0 24px; line-height:1.55; }
-  .cap b { color:var(--fg); font-weight:600; }
-  footer { border-top:1px solid var(--line); }
-  footer .in { max-width:1160px; margin:0 auto; padding:28px 24px 48px; color:var(--faint); font-size:13px; display:flex; flex-wrap:wrap; gap:8px 24px; justify-content:space-between; }
+  th { background:var(--surface); color:var(--dim); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.09em; white-space:nowrap; }
+  td.r, th.r { text-align:right; }
+  td code { font-size:.86em; }
+  .tag { display:inline-block; font-size:11px; font-weight:600; letter-spacing:.04em; padding:2px 8px; border-radius:999px; background:#5fd3b51a; color:var(--sq); border:1px solid #5fd3b540; white-space:nowrap; }
+  .tag.w { background:#e8b04a14; color:var(--warn); border-color:#e8b04a40; }
+  .tag.d { background:#ffffff08; color:var(--dim); border-color:var(--line2); }
+  figure { margin:10px 0 26px; }
+  figure .box { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:18px; overflow-x:auto; }
+  figure svg { display:block; width:100%; height:auto; font-family:var(--sans); }
+  figcaption { font-family:var(--sans); font-size:13px; color:var(--dim); margin-top:10px; line-height:1.55; }
+  figcaption b { color:var(--fg); }
+  .note { font-family:var(--sans); background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:14px 18px; margin:18px 0; font-size:14px; color:var(--dim); line-height:1.6; }
+  .note b { color:var(--fg); }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:8px 0 22px; font-family:var(--sans); }
+  .cols > div { border:1px solid var(--line); border-radius:10px; padding:16px 18px; background:var(--surface); }
+  .cols h4 { font-size:14px; color:#fff; margin-bottom:6px; display:flex; gap:10px; align-items:baseline; }
+  .cols h4 span { font-family:var(--mono); font-size:11.5px; color:var(--sq); font-weight:500; }
+  .cols p { font-size:14px; line-height:1.6; margin:0; color:var(--dim); }
+  @media (max-width:700px) { .cols { grid-template-columns:1fr; } }
+  .timeline { list-style:none; padding:0; margin:8px 0 22px; border-left:1px solid var(--line2); font-family:var(--sans); }
+  .timeline li { position:relative; padding:0 0 18px 22px; margin:0; }
+  .timeline li::before { content:""; position:absolute; left:-5px; top:7px; width:9px; height:9px; border-radius:50%; background:var(--bg); border:2px solid var(--faint); }
+  .timeline li.done::before { background:var(--sq); border-color:var(--sq); }
+  .timeline b { display:block; font-size:14.5px; }
+  .timeline span { font-size:13.5px; color:var(--dim); line-height:1.55; display:block; }
+  .timeline em { font-style:normal; font-family:var(--mono); font-size:11.5px; color:var(--faint); }
+  ol.refs { font-family:var(--sans); font-size:14px; padding-left:28px; color:var(--dim); }
+  ol.refs li { margin-bottom:8px; }
+  dl.gloss { display:grid; grid-template-columns:180px 1fr; border:1px solid var(--line); border-radius:10px; overflow:hidden; font-family:var(--sans); font-size:14px; margin:6px 0 22px; }
+  dl.gloss dt, dl.gloss dd { padding:10px 14px; border-bottom:1px solid var(--line); }
+  dl.gloss dt { color:var(--fg); font-weight:600; background:var(--surface); }
+  dl.gloss dd { color:var(--dim); line-height:1.55; }
+  dl.gloss dt:last-of-type, dl.gloss dd:last-of-type { border-bottom:0; }
+  @media (max-width:600px) { dl.gloss { grid-template-columns:1fr; } dl.gloss dt { border-bottom:0; padding-bottom:2px; } }
+  footer { border-top:1px solid var(--line); font-family:var(--sans); }
+  footer .in { max-width:1180px; margin:0 auto; padding:28px 24px 48px; color:var(--faint); font-size:13px; display:flex; flex-wrap:wrap; gap:8px 24px; justify-content:space-between; }
   footer a { color:var(--dim); }
+
+  /* svg diagram palette */
+  .d-box { fill:var(--raised); stroke:var(--line2); }
+  .d-hi { fill:#5fd3b512; stroke:#5fd3b566; }
+  .d-ac { fill:#f2a33a12; stroke:#f2a33a66; }
+  .d-t { fill:var(--fg); font-size:13px; font-weight:600; }
+  .d-s { fill:var(--dim); font-size:11.5px; }
+  .d-m { fill:var(--dim); font-size:11px; font-family:var(--mono); }
+  .d-g { fill:var(--faint); font-size:10.5px; letter-spacing:.12em; font-weight:600; }
+  .d-a { stroke:var(--faint); stroke-width:1.4; fill:none; marker-end:url(#arr); }
+  .d-ad { stroke:var(--faint); stroke-width:1.2; fill:none; stroke-dasharray:4 4; marker-end:url(#arr); }
+  .c-grid { stroke:var(--line); }
+  .c-ax { fill:var(--faint); font-size:11px; font-family:var(--mono); }
+  .c-lab { fill:var(--dim); font-size:11.5px; }
+
+  @media print {
+    :root { --bg:#fff; --surface:#f7f6f3; --raised:#f1efea; --line:#dedad3; --line2:#cfcac1; --fg:#111; --text:#222; --dim:#555; --faint:#777; }
+    body { font-size:11pt; }
+    .top, aside.toc, .actions, .livehead, .live, footer { display:none !important; }
+    .page { display:block; padding:0; } main { padding:0; }
+    h1, h2, h3, b, strong, em, .abstract p, .eq { color:#111 !important; }
+    section, figure, .eq, .tbl { break-inside:avoid; }
+    a { color:#111; }
+  }
 </style>
 </head>
 <body>
 <header class="top"><div class="in">
   <a class="brand" href="../"><svg viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="50" cy="58" rx="40" ry="32" fill="#e8a25c"/><circle cx="34" cy="26" r="11" fill="#d98c45"/><circle cx="64" cy="28" r="10" fill="#d98c45"/><circle cx="70" cy="50" r="6" fill="#1a0f08"/><ellipse cx="60" cy="66" rx="22" ry="17" fill="#fbe7c8"/></svg>Hamster Dash <small>/ Whitepaper</small></a>
-  <nav class="links"><a class="hide-s" href="#economy">Economy</a><a class="hide-s" href="#data">API</a><a class="hide-s" href="https://github.com/bogemon458/hamsterdash" target="_blank" rel="noopener">GitHub</a><a class="play" href="../">Play now</a></nav>
-</div><div class="track"><i id="prog"></i><canvas id="runner" width="88" height="60"></canvas></div></header>
+  <nav class="links"><a class="hide-s" href="#architecture">Architecture</a><a class="hide-s" href="#economy">Economy</a><a class="hide-s" href="#security">Security</a><a class="hide-s" href="https://github.com/bogemon458/hamsterdash" target="_blank" rel="noopener">GitHub</a><a class="play" href="../">Play now</a></nav>
+</div><div class="track"><i id="prog"></i></div></header>
 
 <div class="page">
 <aside class="toc" id="side">
   <div class="t">Contents</div>
-  <a href="#game"><span>01</span>The game</a>
-  <a href="#rounds"><span>02</span>Fair courses</a>
-  <a href="#wheel"><span>03</span>The real hamster</a>
-  <a href="#economy"><span>04</span>Economy</a>
-  <a href="#power"><span>05</span>Squeek power</a>
-  <a href="#data"><span>06</span>Data sources</a>
-  <a href="#safety"><span>07</span>Safety</a>
-  <a href="#limits"><span>08</span>Limits &amp; roadmap</a>
+  <a href="#abstract"><span>—</span>Abstract</a>
+  <a href="#intro"><span>1</span>Introduction</a>
+  <a href="#architecture"><span>2</span>System architecture</a>
+  <a href="#gameplay"><span>3</span>Gameplay model</a>
+  <a href="#courses"><span>4</span>Deterministic courses</a>
+  <a href="#wheel"><span>5</span>Live wheel coupling</a>
+  <a href="#economy"><span>6</span>Economic model</a>
+  <a href="#data"><span>7</span>Data sources</a>
+  <a href="#security"><span>8</span>Security &amp; trust</a>
+  <a href="#limits"><span>9</span>Limitations</a>
+  <a href="#roadmap"><span>10</span>Roadmap</a>
+  <div class="grp"></div>
+  <a href="#params"><span>A</span>Parameters</a>
+  <a href="#glossary"><span>B</span>Glossary</a>
+  <a href="#refs"><span>C</span>References</a>
 </aside>
-<main>
-  <div class="hero">
-    <div>
-      <div class="kicker">Technical whitepaper · v1.1</div>
-      <h1>Hamster Dash</h1>
-      <p class="lead">An endless runner built on top of Squeekchain, the blockchain powered by a real hamster on a real wheel. The course, the bonuses and the rewards in the game all come from live Squeekchain data, and the reward math uses the same rules as the chain.</p>
-    </div>
-    <div class="w"><canvas id="wheel" width="500" height="500" aria-label="A hamster running in its wheel"></canvas>
-      <div class="wheelcap" id="wheelcap">checking the real wheel…</div></div>
-  </div>
 
-  <nav class="toc">
-    <a href="#game">1. The game</a>
-    <a href="#rounds">2. Fair courses</a>
-    <a href="#wheel">3. The real hamster</a>
-    <a href="#economy">4. Economy</a>
-    <a href="#power">5. Squeek power</a>
-    <a href="#data">6. Data sources</a>
-    <a href="#safety">7. Safety</a>
-    <a href="#limits">8. Limits &amp; ideas</a>
-  </nav>
+<main>
+  <div class="kicker">Technical whitepaper · Version 1.2</div>
+  <h1>Hamster Dash<span class="sub">A deterministic, read-only game model of Squeekchain's proof-of-wheel economy</span></h1>
+  <div class="byline"><span>By <b>Hamster Dash contributors</b></span><span>Published <b>November 2026</b></span><span>Status <b>Live on hamsterdash.site</b></span></div>
+  <div class="actions">
+    <a class="btn pri" href="../">Play the game</a>
+    <a class="btn" href="https://github.com/bogemon458/hamsterdash" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>Source code</a>
+    <button class="btn" onclick="print()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 2v8m0 0l-3-3m3 3l3-3M3 13h10"/></svg>Save as PDF</button>
+  </div>
 
   <div class="meta">
-    <div><span>Version</span><b>1.1 · Nov 2026</b></div>
     <div><span>Network</span><b>Squeekchain · Sepolia</b></div>
     <div><span>Wallet access</span><b>None (read-only)</b></div>
-    <div><span>License</span><b>MIT, open source</b></div>
+    <div><span>Footprint</span><b>1 HTML file, 0 deps</b></div>
+    <div><span>License</span><b>MIT</b></div>
   </div>
 
-  <div class="abstract"><div class="t">Abstract</div>
-    <p>Hamster Dash maps Squeekchain's proof-of-wheel economy onto a playable endless runner. Courses are seeded by the live Squeekchain round, so every player in a round races the same track. Collected seeds act as work units at the chain's live difficulty, finished blocks issue SQK on the real issuance schedule, and checkpoint flags settle that SQK into a stake whose power follows SqueekStaking's formula. When the real hamster is on its wheel, the game shows it and pays double. Everything is read from public endpoints. The game never touches a wallet.</p>
+  <div class="abstract" id="abstract"><div class="t">Abstract</div>
+    <p>Squeekchain secures its block production with a physical signal: a real hamster running on a real wheel, where every measured magnet pass is a unit of work. Hamster Dash turns that economy into something a player can feel. It is a browser-based endless runner whose course, difficulty and rewards are derived from live Squeekchain state. Courses are generated from the current Squeekchain round, so every player in a round races an identical track. Collected seeds act as work at the chain's live difficulty, completed blocks issue SQK on the published issuance schedule, and checkpoint flags settle that SQK into a stake whose power follows the SqueekStaking formula. While the real hamster is on its wheel, the game shows it in-world and doubles work. The client is a single dependency-free HTML file that only reads public endpoints. It never connects to, or asks anything of, a wallet.</p>
+    <p class="kw">Keywords: proof-of-wheel · deterministic procedural generation · token issuance modelling · staking power · read-only dApp</p>
   </div>
 
   <div class="livehead"><i></i>Live from api.squeekchain.com</div>
   <div class="live" id="live">
-    <div><b id="lvRound">…</b><span>Squeekchain round right now</span></div>
-    <div><b id="lvReward">…</b><span>SQK per Squeek block right now</span></div>
-    <div><b id="lvWork">…</b><span>Seeds (work) per block</span></div>
-    <div><b id="lvWheel">…</b><span>The real wheel</span></div>
+    <div><b id="lvRound">…</b><span>Current Squeekchain round</span></div>
+    <div><b id="lvReward">…</b><span>SQK issued per Squeek block</span></div>
+    <div><b id="lvWork">…</b><span>Work (seeds) per block</span></div>
+    <div><b id="lvWheel">…</b><span>Real wheel status</span></div>
   </div>
 
-  <section id="game">
-    <h2><span>01</span>The game</h2>
-    <p>You play a hamster running through four areas: the Burrow, Sunny Meadow, Sunset Hills and Night Forest. The area changes every 150 m. You hop over pebbles, sharp grey rocks and roots, and duck under eagles and bats, or land on top of them to stomp them. Speed goes up with distance, so a run gets harder the longer you last.</p>
+  <section id="intro">
+    <h2><span class="n">1</span>Introduction</h2>
+    <p>Most token economies are invisible to the people who hold the tokens. Issuance curves, halvings, checkpoints and staking power live in contracts and documentation, and are rarely experienced directly. Squeekchain is unusual because its work signal is physical and observable: a hamster runs, the wheel turns, work accumulates, and blocks are produced. Hamster Dash takes that one step further and puts the player in the hamster's place.</p>
+    <p>The goal is a game that is fun on its own terms while staying <em>faithful</em> to the chain it represents. Every economic number in the game either comes from the Squeekchain API at runtime or follows the published rules exactly, and the document below specifies both.</p>
+    <h3><span class="n">1.1</span>Design goals</h3>
+    <div class="cols">
+      <div><h4><span>G1</span>Faithful economics</h4><p>Work, difficulty, issuance, settlement and staking power follow Squeekchain's rules, with live parameters wherever the API publishes them.</p></div>
+      <div><h4><span>G2</span>Fair competition</h4><p>Everyone in the same round plays the same course, and score does not depend on wallet holdings, device speed or frame rate.</p></div>
+      <div><h4><span>G3</span>Zero trust required</h4><p>No wallet connection, no signatures, no transactions, no accounts, no analytics. Public reads only.</p></div>
+      <div><h4><span>G4</span>Runs anywhere</h4><p>One static HTML file with no build step and no third-party code. It loads instantly on phones and can be audited in a single sitting.</p></div>
+    </div>
+    <h3><span class="n">1.2</span>Contributions</h3>
     <ul>
-      <li><b>Hop:</b> Space, ↑, W or tap. Hold for a higher hop, press again in the air for a double hop.</li>
-      <li><b>Duck:</b> ↓ or S, or the button on phones. Ducking in the air makes you fall fast.</li>
-      <li><b>Stomp:</b> land on an eagle or bat while falling to knock it out. You bounce back up with your double hop restored. Each stomp is worth 50 points, and chaining stomps without touching the ground multiplies it (50, 100, 150…).</li>
-      <li><b>Seeds</b> are worth 10 points each and are also your <i>work</i> (section 4). A <b>golden seed</b> gives you a shield that blocks one hit.</li>
-      <li><b>Score</b> = seeds × 10 + metres run + stomp points. Seed rows never sit right in front of a hazard, and some seed arcs trace the hop over an obstacle. Wallets and Squeeks don't change your score, so everyone on the same course competes on equal terms.</li>
+      <li>A round-seeded course generator that makes each Squeekchain round a shared, reproducible level (§4).</li>
+      <li>An in-game economy that mirrors SqueekMining issuance and SqueekStaking power, including settlement risk (§6).</li>
+      <li>A live coupling between the physical wheel and the game world (§5).</li>
+      <li>A strict read-only trust model suitable for a community project (§8).</li>
     </ul>
   </section>
 
-  <section id="rounds">
-    <h2><span>02</span>Fair courses, one per round</h2>
-    <p>Squeekchain splits time into 10-minute rounds, counted from the genesis time in the core contract. The game reads <code>genesisTimestamp</code> and <code>roundDuration</code> from <code>/v1/core</code> and works out the current round the same way the chain does:</p>
-    <pre><code>round = floor((now − genesisTimestamp) / roundDuration) + 1</code></pre>
-    <p>That round number seeds the random generator behind obstacles, seeds and flyers. So every player in the same round gets the exact same course, and a new course starts when the round rolls over. Speed depends only on distance, so the course plays the same on a slow phone as on a fast PC. Your best score for each round is saved, so you can compare runs with friends playing the same round.</p>
+  <section id="architecture">
+    <h2><span class="n">2</span>System architecture</h2>
+    <p>The system has three tiers. Squeekchain's contracts on Sepolia hold the canonical state. The public Squeekchain API exposes that state as JSON. The Hamster Dash client polls the API, derives the game's parameters, and keeps all player state in the browser. A public Sepolia RPC is used only as a fallback for one ownership check.</p>
+    <figure>
+      <div class="box">
+        <svg viewBox="0 0 760 330" role="img" aria-label="Architecture: Squeekchain contracts, the public API, and the Hamster Dash client modules">
+          <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6c655c"/></marker></defs>
+          <text class="d-g" x="10" y="16">ON-CHAIN · SEPOLIA</text>
+          <rect class="d-box" x="10" y="26" width="190" height="236" rx="10"/>
+          <text class="d-t" x="26" y="52">Squeekchain contracts</text>
+          <text class="d-s" x="26" y="80">Core · rounds, difficulty</text>
+          <text class="d-s" x="26" y="102">SqueekMining · issuance</text>
+          <text class="d-s" x="26" y="124">SqueekStaking · power</text>
+          <text class="d-s" x="26" y="146">Squeek collection (NFT)</text>
+          <text class="d-s" x="26" y="168">SQK token</text>
+          <line x1="26" y1="186" x2="184" y2="186" stroke="#38322b"/>
+          <text class="d-s" x="26" y="208">Fed by the physical wheel:</text>
+          <text class="d-s" x="26" y="228">magnet passes = work</text>
+
+          <text class="d-g" x="262" y="16">PUBLIC API</text>
+          <rect class="d-hi" x="262" y="26" width="200" height="164" rx="10"/>
+          <text class="d-t" x="278" y="52">api.squeekchain.com</text>
+          <text class="d-m" x="278" y="80">/v1/core</text>
+          <text class="d-m" x="278" y="104">/v1/status</text>
+          <text class="d-m" x="278" y="128">/v1/economy/state</text>
+          <text class="d-m" x="278" y="152">/v1/accounts/{addr}</text>
+          <text class="d-s" x="278" y="176">JSON, CORS-open, read-only</text>
+          <rect class="d-box" x="262" y="214" width="200" height="48" rx="10"/>
+          <text class="d-t" x="278" y="236">Public Sepolia RPC</text>
+          <text class="d-s" x="278" y="253">fallback balanceOf only</text>
+
+          <text class="d-g" x="526" y="16">CLIENT · BROWSER</text>
+          <rect class="d-ac" x="526" y="26" width="224" height="300" rx="10"/>
+          <text class="d-t" x="542" y="52">Hamster Dash (index.html)</text>
+          <rect class="d-box" x="542" y="64" width="192" height="30" rx="6"/><text class="d-s" x="554" y="84">Round clock · §4</text>
+          <rect class="d-box" x="542" y="100" width="192" height="30" rx="6"/><text class="d-s" x="554" y="120">Wheel monitor · §5</text>
+          <rect class="d-box" x="542" y="136" width="192" height="30" rx="6"/><text class="d-s" x="554" y="156">Economy model · §6</text>
+          <rect class="d-box" x="542" y="172" width="192" height="30" rx="6"/><text class="d-s" x="554" y="192">Account reader · §6.5</text>
+          <rect class="d-box" x="542" y="218" width="192" height="52" rx="6"/>
+          <text class="d-s" x="554" y="240">Game loop: course generator,</text>
+          <text class="d-s" x="554" y="258">physics, renderer</text>
+          <rect class="d-box" x="542" y="282" width="192" height="30" rx="6"/><text class="d-s" x="554" y="302">localStorage (scores, stake)</text>
+
+          <path class="d-a" d="M200 108 H258"/>
+          <path class="d-ad" d="M200 238 H258"/>
+          <path class="d-a" d="M462 79 C500 79 500 79 538 79"/>
+          <path class="d-a" d="M462 103 C500 103 500 115 538 115"/>
+          <path class="d-a" d="M462 127 C500 127 500 151 538 151"/>
+          <path class="d-a" d="M462 151 C500 151 500 187 538 187"/>
+          <path class="d-ad" d="M462 238 C500 238 500 195 538 195"/>
+          <path class="d-a" d="M638 202 V214"/>
+          <path class="d-a" d="M638 270 V278"/>
+        </svg>
+      </div>
+      <figcaption><b>Figure 1.</b> Data flows one way, from chain to client. Solid arrows are the API polls the client makes, and dashed arrows are the fallback path. Nothing flows back to the chain.</figcaption>
+    </figure>
+    <div class="tbl"><table>
+      <tr><th>Module</th><th>Input</th><th>Output</th></tr>
+      <tr><td>Round clock</td><td><code>genesisTimestamp</code>, <code>roundDuration</code></td><td>Current round <var>n</var>, course seed, countdown</td></tr>
+      <tr><td>Wheel monitor</td><td><code>coreStatus</code>, <code>speedMmPerSecond</code>, <code>blockHeight</code></td><td>Work multiplier, LIVE ghost, free-block events</td></tr>
+      <tr><td>Economy model</td><td><code>workPerThousandBlocks</code>, funded blocks, schedule</td><td>Work per block, SQK per block, settlement</td></tr>
+      <tr><td>Account reader</td><td>A pasted address (optional)</td><td>Squeek skin, Squeek power <var>P</var>, real staking share</td></tr>
+      <tr><td>Game loop</td><td>All of the above, plus input</td><td>Frames at the display rate, run results</td></tr>
+    </table></div>
+  </section>
+
+  <section id="gameplay">
+    <h2><span class="n">3</span>Gameplay model</h2>
+    <p>The player controls a hamster that runs to the right at a speed set by distance alone (§4.3). The world cycles through four areas every 150 m (the Burrow, Sunny Meadow, Sunset Hills and Night Forest), each with its own hazards and painted parallax backdrop.</p>
+    <div class="tbl"><table>
+      <tr><th>Action</th><th>Input</th><th>Effect</th></tr>
+      <tr><td>Hop</td><td>Space, ↑, W, tap</td><td>Jump. Holding lowers gravity on the way up for a higher hop.</td></tr>
+      <tr><td>Double hop</td><td>Press again in the air</td><td>Second jump at 82% strength.</td></tr>
+      <tr><td>Duck</td><td>↓, S, on-screen button</td><td>Lower hitbox. In the air, a fast fall.</td></tr>
+      <tr><td>Stomp</td><td>Land on an eagle or bat</td><td>Knocks it out, bounces the hamster up, restores the double hop.</td></tr>
+      <tr><td>Golden seed</td><td>Collect</td><td>Shield that absorbs one hit.</td></tr>
+    </table></div>
+    <h3><span class="n">3.1</span>Scoring</h3>
+    <div class="eq"><span class="f"><var>score</var> = 10 · <var>seeds</var> + ⌊<var>d</var> / 100⌋ + Σ<sub><var>k</var></sub> 50 · <var>c</var><sub><var>k</var></sub><span class="w"><var>d</var> = distance in game units (100 units = 1 m), <var>c</var><sub><var>k</var></sub> = position of stomp <var>k</var> in its airborne chain (1, 2, 3 …)</span></span><span class="no">(1)</span></div>
+    <p>Chained stomps (hitting several flyers without touching the ground) are worth 50, 100, 150 … points. Score deliberately ignores wallets and Squeeks, so holdings can boost the simulated SQK (§6.5) but never the leaderboard number.</p>
+    <h3><span class="n">3.2</span>Hazards</h3>
+    <div class="tbl"><table>
+      <tr><th>Hazard</th><th>Appears</th><th>Answer</th></tr>
+      <tr><td>Pebble, pebble pair, clay mound</td><td>From the start</td><td>Hop</td></tr>
+      <tr><td>Rock spike (taller with distance)</td><td>From the start</td><td>Hop (hold for height)</td></tr>
+      <tr><td>Eagle (day) / bat (burrow, night): low</td><td>After 50 m</td><td>Hop or stomp</td></tr>
+      <tr><td>Flyer, mid height</td><td>After 50 m</td><td>Duck, hop over, or stomp</td></tr>
+      <tr><td>Flyer, high</td><td>After 50 m</td><td>Stay grounded, or stomp from a full hop</td></tr>
+    </table></div>
+  </section>
+
+  <section id="courses">
+    <h2><span class="n">4</span>Deterministic courses</h2>
+    <p>Fairness (G2) requires that two players in the same round face the same sequence of hazards and seeds, regardless of device. Hamster Dash achieves this by deriving the generator seed from Squeekchain's own round clock and by making every timing quantity a function of distance, not of time.</p>
+    <h3><span class="n">4.1</span>Round clock</h3>
+    <div class="eq"><span class="f"><var>n</var> = ⌊(<var>t</var><sub>now</sub> − <var>t</var><sub>genesis</sub>) / <var>Δ</var>⌋ + 1<span class="w"><var>t</var><sub>genesis</sub> = <code>genesisTimestamp</code>, <var>Δ</var> = <code>roundDuration</code> (600 s), both read from <code>/v1/core</code></span></span><span class="no">(2)</span></div>
+    <h3><span class="n">4.2</span>Seeded generator</h3>
+    <p>The course generator draws every random decision (hazard type, size, flyer altitude, seed row shape, golden seed, seed arcs) from one pseudo-random stream:</p>
+    <div class="eq"><span class="f"><var>rng</var> = mulberry32( cyrb53-style 32-bit hash(<code>"hamsterdash/round/"</code> ∥ <var>n</var>) )</span><span class="no">(3)</span></div>
+    <p>Draws happen in a fixed order, and every branch consumes the same number of values, so a course depends only on <var>n</var>. When the round rolls over, the next run gets a new course. Each player's best score per round is kept locally so friends can compare like with like.</p>
+    <h3><span class="n">4.3</span>Frame-rate independence</h3>
+    <div class="eq"><span class="f"><var>v</var>(<var>d</var>) = min(980, √(360² + 18 <var>d</var>))<span class="w">Speed in units/s as a function of distance travelled. The same distance gives the same speed on a 30 Hz phone and a 144 Hz desktop.</span></span><span class="no">(4)</span></div>
+    <h3><span class="n">4.4</span>Clearability guarantees</h3>
+    <div class="def"><div class="label">Guarantee 1 · Every gap can be cleared</div>
+      <p>With jump impulse <var>J</var> = 900 and gravity <var>g</var> = 2600, a full hop lasts <var>t</var><sub>air</sub> = 2<var>J</var>/<var>g</var> ≈ 0.69 s. Consecutive ground hazards are spaced by at least <var>v</var> · <var>t</var><sub>air</sub> · 1.05 + 60 units, so after landing there is always room for another full hop.</p></div>
+    <div class="def"><div class="label">Guarantee 2 · Seeds never bait you into a hazard</div>
+      <p>A seed row is placed only where it is clear of every hazard on screen and of the next one to spawn, with a reaction margin of 0.32 <var>v</var> + 30 units on both sides. If a row would overlap, it is moved forward and the next hazard is pushed back. Separately, 35% of ground hazards carry a five-seed arc that traces the ideal hop over them. That rewards good timing instead of punishing greed.</p></div>
+    <p>Both guarantees are checked automatically. In a headless test of 250 sampled frames of the autoplay course, no plain seed row came within reach of a hazard.</p>
   </section>
 
   <section id="wheel">
-    <h2><span>03</span>The real hamster</h2>
-    <p>Every 5 seconds the game checks <code>/v1/status</code> to see what the wheel is doing. When <code>coreStatus</code> is <code>ACTIVE</code>, the real hamster is running:</p>
-    <ul>
-      <li>a "LIVE" ghost hamster runs along the far ridge at the wheel's real speed (<code>speedMmPerSecond</code>);</li>
-      <li>every seed you grab counts double, both points and work;</li>
-      <li>after the run you see how many metres the real hamster ran while you were playing.</li>
-    </ul>
-    <p>The game also watches the chain's Squeek block height. If the real hamster completes a Squeek block during your run, you get one block for free.</p>
+    <h2><span class="n">5</span>Live wheel coupling</h2>
+    <p>The wheel monitor polls <code>/v1/status</code> every 5 s. When <code>coreStatus</code> is <code>ACTIVE</code>, the real hamster is running and three things change in the game:</p>
+    <ol>
+      <li><b>Double work.</b> Every seed counts as two units of work and two seeds of score.</li>
+      <li><b>The LIVE ghost.</b> A translucent hamster runs on the far ridge at the wheel's measured speed (<code>speedMmPerSecond</code>).</li>
+      <li><b>A shared distance.</b> The results screen reports how far the real hamster ran during the player's run.</li>
+    </ol>
+    <p>In addition, the monitor watches <code>blockHeight</code> from <code>/v1/core</code>. If the chain produces a Squeek block while a run is in progress, the player is credited one block of work. The game never invents wheel activity. When the wheel is idle, these effects stay off.</p>
   </section>
 
   <section id="economy">
-    <h2><span>04</span>Economy: the same rules as Squeekchain</h2>
-    <p>The game has a small economy that copies how SQK is created on Squeekchain (see the <a href="https://docs.squeekchain.com/rewards/" target="_blank" rel="noopener">Rewards docs</a>). It follows the same steps as the chain, with seeds in place of wheel turns:</p>
-    <div class="flow">
-      <div>Seeds = work</div><i>→</i><div>Squeek block</div><i>→</i><div>SQK issued</div><i>→</i><div>Checkpoint flag</div><i>→</i><div>Staked</div>
-    </div>
+    <h2><span class="n">6</span>Economic model</h2>
+    <p>The in-game economy reproduces the life cycle of SQK on Squeekchain [1], with seeds standing in for magnet passes. The pipeline is the same on both sides:</p>
+    <figure>
+      <div class="box">
+        <svg viewBox="0 0 760 120" role="img" aria-label="Pipeline: work, block, issuance, pending, checkpoint, staked">
+          <defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6c655c"/></marker></defs>
+          <g>
+            <rect class="d-box" x="4" y="22" width="112" height="56" rx="8"/><text class="d-t" x="60" y="46" text-anchor="middle">Work</text><text class="d-s" x="60" y="64" text-anchor="middle">seeds / passes</text>
+            <rect class="d-box" x="132" y="22" width="112" height="56" rx="8"/><text class="d-t" x="188" y="46" text-anchor="middle">Squeek block</text><text class="d-s" x="188" y="64" text-anchor="middle">at live difficulty</text>
+            <rect class="d-box" x="260" y="22" width="112" height="56" rx="8"/><text class="d-t" x="316" y="46" text-anchor="middle">Issuance</text><text class="d-s" x="316" y="64" text-anchor="middle">SQK per block</text>
+            <rect class="d-ac" x="388" y="22" width="112" height="56" rx="8"/><text class="d-t" x="444" y="46" text-anchor="middle">Pending</text><text class="d-s" x="444" y="64" text-anchor="middle">at risk</text>
+            <rect class="d-box" x="516" y="22" width="112" height="56" rx="8"/><text class="d-t" x="572" y="46" text-anchor="middle">Checkpoint</text><text class="d-s" x="572" y="64" text-anchor="middle">every 100 m</text>
+            <rect class="d-hi" x="644" y="22" width="112" height="56" rx="8"/><text class="d-t" x="700" y="46" text-anchor="middle">Staked</text><text class="d-s" x="700" y="64" text-anchor="middle">Dash stake → power</text>
+          </g>
+          <g stroke="#6c655c" stroke-width="1.4" marker-end="url(#arr2)">
+            <path d="M116 50 H128"/><path d="M244 50 H256"/><path d="M372 50 H384"/><path d="M500 50 H512"/><path d="M628 50 H640"/>
+          </g>
+          <text class="d-s" x="444" y="102" text-anchor="middle">crash before a flag → pending SQK is lost</text>
+        </svg>
+      </div>
+      <figcaption><b>Figure 2.</b> SQK life cycle. The step marked “pending” is where the game, like the chain, carries settlement risk.</figcaption>
+    </figure>
 
-    <canvas class="anim" id="econ" aria-label="Animation: seeds fill a Squeek block, the block issues SQK, a checkpoint flag stakes it"></canvas>
-    <div class="cap"><b>Figure 1.</b> Every seed is work. Enough work finishes a Squeek block, the block issues SQK as <i>pending</i>, and the next STAKE flag turns it into <i>staked</i>.</div>
-    <h3>4.1 Work and blocks</h3>
-    <p>On Squeekchain, every magnet pass on the wheel is one unit of work, and a Squeek block finishes when enough work is done at the current difficulty. In the game every seed is one unit of work (two while the real wheel is running), and the work needed per block comes straight from the chain:</p>
-    <pre><code>work per block = workPerThousandBlocks / 1000   (live from /v1/core)</code></pre>
-    <p>When the chain's difficulty moves, the game's does too. The bar in the top-left corner shows how full your current block is.</p>
+    <h3><span class="n">6.1</span>Work and difficulty</h3>
+    <div class="eq"><span class="f"><var>W</var><sub>block</sub> = <code>workPerThousandBlocks</code> / 1000<span class="w">Read live from <code>/v1/core</code>. When the chain's difficulty moves, the game's moves with it.</span></span><span class="no">(5)</span></div>
+    <p>Each seed contributes 1 unit of work, or 2 while the wheel is active. When accumulated work reaches <var>W</var><sub>block</sub>, a block is completed and the remainder carries over.</p>
 
-    <h3>4.2 Issuance per block</h3>
-    <p>Each block you finish issues SQK on the same schedule as SqueekMining: a base rate that halves over three periods, plus a launch bonus spread over the first blocks. The block number used is the chain's funded block height plus the blocks from your run.</p>
-    <pre><code>A  = 1,890,000,000 SQK   allowance (2.1B cap − 210M premint)
-G  =   105,000,000 SQK   launch bonus, spread over N = 97,020 blocks
-H  =       393,470       blocks per halving period
-R0 = floor((A − G) · 4 / (7 · H)), rounded down to a multiple of 4  ≈ 2,592 SQK
-
-reward(b) = R0 / 2^floor(b / H)   (only while b &lt; 3H, then 0)
-          + G / N                  (only while b &lt; N)</code></pre>
-    <p>During the launch bonus that comes to about <b>3,674 SQK per block</b>. As a check: Mining has minted about 7.35M SQK for the first 1,999 blocks, which is 3,674 per block, the same number. If the API publishes a schedule, the game uses the live values instead of the ones above.</p>
+    <h3><span class="n">6.2</span>Issuance schedule</h3>
+    <p>SqueekMining issues a base reward that halves over three periods of <var>H</var> blocks, plus a launch bonus spread evenly over the first <var>N</var> blocks [1]:</p>
+    <div class="eq"><span class="f"><var>R</var><sub>0</sub> = ⌊ 4(<var>A</var> − <var>G</var>) / 7<var>H</var> ⌋ rounded down to a multiple of 4 ≈ 2,592 SQK</span><span class="no">(6)</span></div>
+    <div class="eq"><span class="f"><var>r</var>(<var>b</var>) = <var>R</var><sub>0</sub> · 2<sup>−⌊<var>b</var>/<var>H</var>⌋</sup> · 𝟙[<var>b</var> &lt; 3<var>H</var>] + (<var>G</var>/<var>N</var>) · 𝟙[<var>b</var> &lt; <var>N</var>]<span class="w"><var>A</var> = 1.89 B SQK allowance (2.1 B cap − 210 M premint), <var>G</var> = 105 M launch bonus, <var>N</var> = 97,020, <var>H</var> = 393,470</span></span><span class="no">(7)</span></div>
+    <p>The block index <var>b</var> is the chain's funded block height plus the blocks completed in the run, so the game pays what the chain would pay <em>now</em>. During the launch window <var>r</var>(<var>b</var>) ≈ 3,674 SQK. As a consistency check, Mining minted about 7.35 M SQK over the first 1,999 blocks, which is 3,674 per block, matching the model. If the API publishes a schedule, live values take precedence.</p>
+    <figure>
+      <div class="box"><svg id="chartIssue" viewBox="0 0 720 260" role="img" aria-label="SQK issued per block against block height"></svg></div>
+      <figcaption><b>Figure 3.</b> SQK issued per block, <var>r</var>(<var>b</var>), across the full schedule. The teal marker is the chain's current funded block height (live).</figcaption>
+    </figure>
     <div class="tbl"><table>
-      <tr><th>Period</th><th>Blocks</th><th>Base per block</th><th>+ launch bonus</th></tr>
-      <tr><td>Launch</td><td>0 – 97,019</td><td>≈ 2,592</td><td>≈ 1,082</td></tr>
-      <tr><td>1</td><td>0 – 393,469</td><td>≈ 2,592</td><td>until block 97,020</td></tr>
-      <tr><td>2</td><td>393,470 – 786,939</td><td>≈ 1,296</td><td>–</td></tr>
-      <tr><td>3</td><td>786,940 – 1,180,409</td><td>≈ 648</td><td>–</td></tr>
-      <tr><td>After</td><td>1,180,410 +</td><td>0</td><td>–</td></tr>
+      <tr><th>Period</th><th>Blocks</th><th class="r">Base / block</th><th class="r">Launch bonus</th><th class="r">Total / block</th></tr>
+      <tr><td>Launch</td><td>0 – 97,019</td><td class="r">2,592</td><td class="r">1,082</td><td class="r">≈ 3,674</td></tr>
+      <tr><td>1</td><td>97,020 – 393,469</td><td class="r">2,592</td><td class="r">–</td><td class="r">2,592</td></tr>
+      <tr><td>2</td><td>393,470 – 786,939</td><td class="r">1,296</td><td class="r">–</td><td class="r">1,296</td></tr>
+      <tr><td>3</td><td>786,940 – 1,180,409</td><td class="r">648</td><td class="r">–</td><td class="r">648</td></tr>
+      <tr><td>Tail</td><td>≥ 1,180,410</td><td class="r">0</td><td class="r">–</td><td class="r">0</td></tr>
     </table></div>
 
-    <h3>4.3 Checkpoints</h3>
-    <p>On Squeekchain, finished blocks don't pay anyone until a checkpoint mints their SQK and sends it to Staking. The game works the same way. SQK from your blocks stays <i>pending</i> (yellow) until you run past a <b>STAKE</b> flag, which comes every 100 m. Then it becomes <i>staked</i> (teal). If you crash before the next flag, the pending SQK is lost. That's the risk you take for pushing on.</p>
+    <h3><span class="n">6.3</span>Settlement and risk</h3>
+    <p>On Squeekchain, completed blocks pay nobody until a checkpoint mints their SQK and routes it to staking. The game keeps that property. SQK from completed blocks is <em>pending</em> until the hamster passes a STAKE flag (every 100 m), and then it becomes <em>staked</em>. A crash before the next flag forfeits the pending amount. Pushing on for one more block is a real risk/reward decision, just as it is for a miner waiting on a checkpoint.</p>
 
-    <h3>4.4 Your Dash stake</h3>
-    <p>Staked SQK from every run adds up into your <b>Dash stake</b>, which is saved in your browser. Its power uses the staking formula from SqueekStaking:</p>
-    <pre><code>power = P + S / c × (1 + P / P_ref)      c = 40 SQK, P_ref = 1,000
-S = your Dash stake, P = Squeek power of your staked Squeeks</code></pre>
-  </section>
+    <h3><span class="n">6.4</span>Dash stake and staking power</h3>
+    <p>Staked SQK accumulates across runs into the player's <em>Dash stake</em> <var>S</var>, stored locally. Its power follows SqueekStaking:</p>
+    <div class="eq"><span class="f"><var>power</var> = <var>P</var> + (<var>S</var> / <var>c</var>) · (1 + <var>P</var> / <var>P</var><sub>ref</sub>)<span class="w"><var>c</var> = 40 SQK, <var>P</var><sub>ref</sub> = 1,000, <var>P</var> = Squeek power of the address's staked Squeeks (0 if none)</span></span><span class="no">(8)</span></div>
 
-  <section id="power">
-    <h2><span>05</span>Squeek power</h2>
-    <p>Paste a wallet address in the menu (or open <code>hamsterdash.site/?address=0x…</code>) and the game reads that account from <code>/v1/accounts/{address}</code>:</p>
-    <ul>
-      <li>Owning any Squeek, in the wallet or staked, unlocks the teal Squeek skin.</li>
-      <li><b>Staked</b> Squeeks boost the SQK you mine, by the same factor that boosts staked SQK on Squeekchain: <code>×(1 + P / 1,000)</code>. As on the chain, only deposited Squeeks count.</li>
-      <li>The game also shows the wallet's real staking power, its share of all power, and roughly how much real SQK that share earns per block.</li>
-    </ul>
-    <div class="tbl"><table>
-      <tr><th>Level</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr>
-      <tr><td>Power</td><td>1,000</td><td>2,200</td><td>4,840</td><td>10,648</td><td>23,426</td></tr>
-      <tr><td>Boost (one staked)</td><td>×2</td><td>×3.2</td><td>×5.84</td><td>×11.6</td><td>×24.4</td></tr>
-    </table></div>
-    <canvas class="anim short" id="merge" aria-label="Animation: two Level 1 Squeeks merge into one Level 2 Squeek"></canvas>
-    <div class="cap"><b>Figure 2.</b> Two Level 1 Squeeks (1,000 power each) merge into one Level 2 Squeek with 2,200 power, 10% more than the pair.</div>
-    <p>Each level has 2.2 times the power of the one below, so merging two Squeeks always gives a bit more boost than keeping the pair.</p>
+    <h3 id="squeeks"><span class="n">6.5</span>Squeek power</h3>
+    <p>A player may paste any address (or open <code>?address=0x…</code>). The account reader fetches <code>/v1/accounts/{address}</code>. Owning a Squeek, in the wallet or staked, unlocks a cosmetic teal skin. <em>Staked</em> Squeeks multiply mined SQK by the same factor staking applies on chain:</p>
+    <div class="eq"><span class="f"><var>boost</var> = 1 + <var>P</var> / 1000,   <var>P</var><sub>level</sub>(<var>L</var>) = 1000 · 2.2<sup><var>L</var>−1</sup></span><span class="no">(9)</span></div>
+    <figure>
+      <div class="box"><svg id="chartPower" viewBox="0 0 720 240" role="img" aria-label="Squeek power and boost by level"></svg></div>
+      <figcaption><b>Figure 4.</b> Power per Squeek level (bars) and the resulting boost for one staked Squeek. Each level has 2.2× the power of the one below, so merging two Squeeks always beats holding the pair (2.2 &gt; 2).</figcaption>
+    </figure>
+    <p>The reader also reports the address's real staking power, its share of all power, and the real SQK that share earns per block. These figures are informational and are never mixed into the score.</p>
   </section>
 
   <section id="data">
-    <h2><span>06</span>Data sources</h2>
+    <h2><span class="n">7</span>Data sources</h2>
     <div class="tbl"><table>
-      <tr><th>Source</th><th>Used for</th><th>How often</th></tr>
-      <tr><td><code>/v1/core</code></td><td>Round clock, difficulty, Squeek block height</td><td>Every 20 s</td></tr>
-      <tr><td><code>/v1/status</code></td><td>Wheel status, speed, RPM</td><td>Every 5 s</td></tr>
-      <tr><td><code>/v1/economy/state</code></td><td>Funded blocks, issuance schedule, supply, staking totals, Squeeks alive</td><td>Every 60 s</td></tr>
-      <tr><td><code>/v1/accounts/{address}</code></td><td>Squeeks, levels, staking power</td><td>When you check a wallet</td></tr>
-      <tr><td>Sepolia <code>balanceOf</code></td><td>Fallback Squeek check if the API is down</td><td>When needed</td></tr>
+      <tr><th>Source</th><th>Fields used</th><th>Purpose</th><th>Refresh</th></tr>
+      <tr><td><code>/v1/core</code></td><td><code>genesisTimestamp</code>, <code>roundDuration</code>, <code>workPerThousandBlocks</code>, <code>blockHeight</code></td><td>Round clock, difficulty, block events</td><td>20 s</td></tr>
+      <tr><td><code>/v1/status</code></td><td><code>coreStatus</code>, <code>speedMmPerSecond</code>, <code>rpmMilli</code></td><td>Wheel coupling</td><td>5 s</td></tr>
+      <tr><td><code>/v1/economy/state</code></td><td>Funded blocks, schedule, supply, staking totals</td><td>Issuance index, economy panel</td><td>60 s</td></tr>
+      <tr><td><code>/v1/accounts/{a}</code></td><td>Squeeks, levels, staking power</td><td>Skin, boost, share</td><td>On request</td></tr>
+      <tr><td>Sepolia RPC</td><td><code>balanceOf</code></td><td>Ownership fallback if the API is down</td><td>On request</td></tr>
     </table></div>
-    <p>All endpoints are on <code>api.squeekchain.com</code>. Contracts on Sepolia: Squeek collection <code>0xc4c7982657f00509548f3a3a41db7fa439a6856b</code>, SQK <code>0xd78a3956cf63164d1fa1c622ad3c66623162fa1e</code>.</p>
+    <p>Contracts referenced: Squeek collection <code>0xc4c7982657f00509548f3a3a41db7fa439a6856b</code>, SQK <code>0xd78a3956cf63164d1fa1c622ad3c66623162fa1e</code> (Sepolia). Every API call is wrapped so that a failure falls back to the last known or documented value, and the game stays playable offline.</p>
   </section>
 
-  <section id="safety">
-    <h2><span>07</span>Safety and honesty</h2>
-    <ul>
-      <li><b>Read-only.</b> No wallet connect, no signatures, no transactions. A pasted address is only used to read public data.</li>
-      <li><b>Simulated SQK.</b> SQK in the game is simulated with Squeekchain's rules. It's not a real token, can't be claimed, and only lives in your browser.</li>
-      <li><b>No tracking.</b> No accounts, cookies or analytics. Scores, settings and your Dash stake stay in your browser's local storage.</li>
-      <li><b>Open source.</b> One HTML file with no dependencies, MIT licensed: <a href="https://github.com/bogemon458/hamsterdash" target="_blank" rel="noopener">github.com/bogemon458/hamsterdash</a>.</li>
-    </ul>
+  <section id="security">
+    <h2><span class="n">8</span>Security and trust model</h2>
+    <p>A community game around a token is an obvious place for phishing, so Hamster Dash is designed to require no trust at all. The table lists the risks we considered and how the design rules each one out.</p>
+    <div class="tbl"><table>
+      <tr><th>Threat</th><th>Mitigation</th><th>Status</th></tr>
+      <tr><td>Wallet drain, malicious approvals, blind signatures</td><td>No wallet connection code exists. No <code>eth_sendTransaction</code>, no <code>eth_sign</code>, no EIP-712. Addresses are typed in and only read.</td><td><span class="tag">By design</span></td></tr>
+      <tr><td>Fake rewards presented as real</td><td>All in-game SQK is labelled simulated, can't be claimed, and lives only in local storage.</td><td><span class="tag">By design</span></td></tr>
+      <tr><td>Tracking and data collection</td><td>No accounts, cookies, analytics or third-party scripts. Only Google Fonts and the Squeekchain API are contacted.</td><td><span class="tag">By design</span></td></tr>
+      <tr><td>Supply-chain compromise</td><td>Zero dependencies and no build step. The deployed file is the reviewed file, under MIT on GitHub.</td><td><span class="tag">By design</span></td></tr>
+      <tr><td>Score tampering</td><td>Scores are local today. Any future shared leaderboard needs signed, verifiable submissions (§10).</td><td><span class="tag w">Open</span></td></tr>
+      <tr><td>API unavailability</td><td>Documented constants as fallback, RPC fallback for ownership, and graceful degradation of live features.</td><td><span class="tag">Handled</span></td></tr>
+    </table></div>
+    <div class="note"><b>Disclosure.</b> Hamster Dash is an independent community project built for Squeekchain. It is not operated by the Squeekchain team and does not issue tokens.</div>
   </section>
 
   <section id="limits">
-    <h2><span>08</span>Limits and roadmap</h2>
-    <p>Being clear about what the game does <i>not</i> do yet:</p>
+    <h2><span class="n">9</span>Limitations</h2>
     <ul>
-      <li>Scores are only saved in your own browser. There is no shared leaderboard yet.</li>
-      <li>Squeekchain is on the Sepolia testnet, and some numbers (difficulty, issuance start) may change when mainnet arrives. The game reads them live where it can.</li>
-      <li>If the wheel is idle, the live bonuses simply don't show up. The game only rewards real wheel activity.</li>
+      <li><b>Local state only.</b> Scores, round bests and the Dash stake live in one browser. Clearing site data resets them.</li>
+      <li><b>Testnet parameters.</b> Squeekchain currently runs on Sepolia, and difficulty, issuance start and contract addresses may change at mainnet. The game reads what it can live, and §6 constants will be revised if the published rules change.</li>
+      <li><b>Model, not a mirror.</b> The economy follows the chain's formulas but runs at game speed. One run can complete many blocks, far more than one player's share of real wheel work.</li>
+      <li><b>Wheel effects depend on the hamster.</b> When the wheel is idle, the live effects are intentionally absent.</li>
     </ul>
-    <p>Ideas for later: a shared leaderboard per round, Squeek levels shown as skin details, and an optional signed score submission once Squeekchain is on mainnet.</p>
-    <div class="note">Hamster Dash is a community project and is not run by the Squeekchain team. Squeekchain project ID: <code>478ab808-9282-4b50-b1b0-4aa3b852f280</code></div>
+  </section>
+
+  <section id="roadmap">
+    <h2><span class="n">10</span>Roadmap</h2>
+    <ul class="timeline">
+      <li class="done"><em>v1.0 · Nov 2026</em><b>Launch</b><span>Endless runner, round-seeded courses, live wheel coupling, read-only Squeek check.</span></li>
+      <li class="done"><em>v1.1 · Nov 2026</em><b>Economy model</b><span>Work at live difficulty, real issuance schedule, checkpoints, Dash stake, Squeek power boost, this whitepaper.</span></li>
+      <li class="done"><em>v1.2 · Nov 2026</em><b>Gameplay and presentation</b><span>Stomps with combos, hazard-safe seed placement and seed arcs, painted parallax worlds with smooth area transitions.</span></li>
+      <li><em>Next</em><b>Per-round leaderboard</b><span>Shared board per Squeekchain round, with replay-based verification. Because a course is a pure function of <var>n</var>, inputs can be re-simulated to validate a score.</span></li>
+      <li><em>At mainnet</em><b>Optional signed scores</b><span>Opt-in signed submissions bound to an address, only once Squeekchain mainnet parameters are final. Read-only mode stays the default.</span></li>
+    </ul>
+  </section>
+
+  <section id="params">
+    <h2><span class="n">A</span>Appendix: parameters</h2>
+    <div class="tbl"><table>
+      <tr><th>Symbol</th><th>Value</th><th>Meaning</th><th>Source</th></tr>
+      <tr><td><var>Δ</var></td><td>600 s</td><td>Round duration</td><td><span class="tag">live</span></td></tr>
+      <tr><td><var>W</var><sub>block</sub></td><td>wpk / 1000</td><td>Work per Squeek block</td><td><span class="tag">live</span></td></tr>
+      <tr><td><var>A</var></td><td>1,890,000,000</td><td>Mining allowance (SQK)</td><td><span class="tag d">docs [1]</span></td></tr>
+      <tr><td><var>G</var></td><td>105,000,000</td><td>Launch bonus (SQK)</td><td><span class="tag d">docs [1]</span></td></tr>
+      <tr><td><var>N</var></td><td>97,020</td><td>Launch bonus blocks</td><td><span class="tag d">docs [1]</span></td></tr>
+      <tr><td><var>H</var></td><td>393,470</td><td>Blocks per halving period</td><td><span class="tag d">docs [1]</span></td></tr>
+      <tr><td><var>c</var></td><td>40 SQK</td><td>Stake normaliser</td><td><span class="tag d">docs [1]</span></td></tr>
+      <tr><td><var>P</var><sub>ref</sub></td><td>1,000</td><td>Reference Squeek power</td><td><span class="tag d">docs [1]</span></td></tr>
+      <tr><td><var>J</var>, <var>g</var></td><td>900, 2600</td><td>Jump impulse, gravity (units/s, units/s²)</td><td><span class="tag w">game</span></td></tr>
+      <tr><td>—</td><td>100 m</td><td>Checkpoint spacing</td><td><span class="tag w">game</span></td></tr>
+      <tr><td>—</td><td>150 m</td><td>Area length</td><td><span class="tag w">game</span></td></tr>
+      <tr><td>—</td><td>12% / 35%</td><td>Golden seed per row / seed arc per ground hazard</td><td><span class="tag w">game</span></td></tr>
+    </table></div>
+  </section>
+
+  <section id="glossary">
+    <h2><span class="n">B</span>Appendix: glossary</h2>
+    <dl class="gloss">
+      <dt>Work</dt><dd>On chain, one measured magnet pass of the wheel. In game, one seed (two while the wheel is active).</dd>
+      <dt>Squeek block</dt><dd>A unit of block production, completed when accumulated work reaches the current difficulty.</dd>
+      <dt>Round</dt><dd>A fixed 10-minute window counted from genesis. In Hamster Dash, one round = one course.</dd>
+      <dt>Checkpoint</dt><dd>The step that mints completed blocks' SQK and routes it to staking. In game, the STAKE flag.</dd>
+      <dt>Squeek</dt><dd>Squeekchain's NFT. When staked, its power boosts SQK earnings. Two of a level merge into the next.</dd>
+      <dt>Dash stake</dt><dd>The player's simulated staked SQK, accumulated across runs in local storage.</dd>
+      <dt>LIVE ghost</dt><dd>In-world projection of the real hamster, shown only while the wheel is active.</dd>
+    </dl>
+  </section>
+
+  <section id="refs">
+    <h2><span class="n">C</span>References</h2>
+    <ol class="refs">
+      <li>Squeekchain documentation: Rewards, “How $SQK is issued”, and staking. <a href="https://docs.squeekchain.com/rewards/" target="_blank" rel="noopener">docs.squeekchain.com/rewards</a></li>
+      <li>Squeekchain developer API reference. <a href="https://docs.squeekchain.com/developers/api/" target="_blank" rel="noopener">docs.squeekchain.com/developers/api</a></li>
+      <li>Hamster Dash source code (MIT). <a href="https://github.com/bogemon458/hamsterdash" target="_blank" rel="noopener">github.com/bogemon458/hamsterdash</a></li>
+      <li>T. Ettinger, <i>mulberry32</i>, a 32-bit seeded PRNG (public domain).</li>
+    </ol>
+    <div class="note">Squeekchain project ID: <code>478ab808-9282-4b50-b1b0-4aa3b852f280</code></div>
   </section>
 </main>
 </div>
 
-<footer><div class="in"><span>Hamster Dash · community project built for <a href="https://squeekchain.com" target="_blank" rel="noopener">Squeekchain</a></span><span><a href="../">Play</a> · <a href="https://github.com/bogemon458/hamsterdash" target="_blank" rel="noopener">Source</a> · <a href="https://docs.squeekchain.com" target="_blank" rel="noopener">Squeekchain docs</a></span></div></footer>
+<footer><div class="in"><span>Hamster Dash · an independent community project built for <a href="https://squeekchain.com" target="_blank" rel="noopener">Squeekchain</a></span><span><a href="../">Play</a> · <a href="https://github.com/bogemon458/hamsterdash" target="_blank" rel="noopener">Source</a> · <a href="https://docs.squeekchain.com" target="_blank" rel="noopener">Squeekchain docs</a></span></div></footer>
 
 <script>
 (() => {
   const api = p => fetch('https://api.squeekchain.com' + p, { cache: 'no-store' }).then(r => r.json());
   const nf = n => Intl.NumberFormat('en', { maximumFractionDigits: 1 }).format(n);
-  const set = (id, v) => { document.getElementById(id).textContent = v; };
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
   const A = 1890000000, G = 105000000, N = 97020, H = 393470;
   const R0 = (() => { const r = Math.floor((A - G) * 4 / (7 * H)); return r - r % 4; })();
   const reward = b => { const p = Math.floor(b / H); return (p < 3 ? R0 / 2 ** p : 0) + (b < N ? G / N : 0); };
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (svg, tag, attrs, text) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; svg.appendChild(e); return e; };
+  const kfmt = n => n >= 1e6 ? (n / 1e6).toFixed(n % 1e6 ? 2 : 0).replace(/\.?0+$/, '') + 'M' : n >= 1e3 ? (n / 1e3).toFixed(0) + 'k' : String(n);
+
+  // Figure 3: issuance step chart
+  function chartIssue(funded) {
+    const svg = document.getElementById('chartIssue'); svg.textContent = '';
+    const L = 56, R = 700, T = 34, B = 220, X = 1350000, Y = 4000;
+    const x = b => L + (R - L) * b / X, y = v => B - (B - T) * v / Y;
+    for (const v of [0, 1000, 2000, 3000, 4000]) { el(svg, 'line', { x1: L, x2: R, y1: y(v), y2: y(v), class: 'c-grid' }); el(svg, 'text', { x: L - 8, y: y(v) + 4, 'text-anchor': 'end', class: 'c-ax' }, kfmt(v)); }
+    for (const b of [0, H, 2 * H, 3 * H]) el(svg, 'text', { x: x(b), y: B + 18, 'text-anchor': 'middle', class: 'c-ax' }, kfmt(b));
+    el(svg, 'text', { x: R, y: B + 34, 'text-anchor': 'end', class: 'c-lab' }, 'block height');
+    el(svg, 'text', { x: L, y: 10, class: 'c-lab' }, 'SQK per block');
+    const pts = [[0, reward(0)], [N, reward(0)], [N, reward(N)], [H, reward(N)], [H, reward(H)], [2 * H, reward(H)], [2 * H, reward(2 * H)], [3 * H, reward(2 * H)], [3 * H, 0], [X, 0]];
+    const d = pts.map((p, i) => (i ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join(' ');
+    el(svg, 'path', { d: d + ` L${x(X)} ${B} L${L} ${B} Z`, fill: '#f2a33a', 'fill-opacity': .12 });
+    el(svg, 'path', { d, fill: 'none', stroke: '#f2a33a', 'stroke-width': 2 });
+    const lab = [[N / 2, reward(0), 'launch ≈ 3,674'], [(N + H) / 2, reward(N), '2,592'], [1.5 * H, reward(H), '1,296'], [2.5 * H, reward(2 * H), '648']];
+    for (const [b, v, t] of lab) el(svg, 'text', b < N ? { x: x(N) + 8, y: y(v) + 4, class: 'c-lab' } : { x: x(b), y: y(v) - 8, 'text-anchor': 'middle', class: 'c-lab' }, t);
+    if (funded > 0) {
+      const fx = x(funded);
+      el(svg, 'line', { x1: fx, x2: fx, y1: y(reward(funded)), y2: B, stroke: '#5fd3b5', 'stroke-dasharray': '3 3' });
+      el(svg, 'circle', { cx: fx, cy: y(reward(funded)), r: 4.5, fill: '#5fd3b5' });
+      el(svg, 'text', { x: fx + 8, y: B - 10, class: 'c-lab', style: 'fill:#5fd3b5' }, 'now · block ' + nf(funded));
+    }
+  }
+  // Figure 4: power by level
+  function chartPower() {
+    const svg = document.getElementById('chartPower'); svg.textContent = '';
+    const L = 56, R = 700, T = 24, B = 196, lv = [1, 2, 3, 4, 5], pw = lv.map(l => Math.round(1000 * 2.2 ** (l - 1))), max = 25000;
+    const y = v => B - (B - T) * v / max, bw = 70, step = (R - L) / lv.length;
+    for (const v of [0, 5000, 10000, 15000, 20000, 25000]) { el(svg, 'line', { x1: L, x2: R, y1: y(v), y2: y(v), class: 'c-grid' }); el(svg, 'text', { x: L - 8, y: y(v) + 4, 'text-anchor': 'end', class: 'c-ax' }, kfmt(v)); }
+    lv.forEach((l, i) => {
+      const cx = L + step * (i + 0.5);
+      el(svg, 'rect', { x: cx - bw / 2, y: y(pw[i]), width: bw, height: B - y(pw[i]), rx: 4, fill: '#5fd3b5', 'fill-opacity': .22 + i * .12, stroke: '#5fd3b5', 'stroke-opacity': .6 });
+      el(svg, 'text', { x: cx, y: y(pw[i]) - 8, 'text-anchor': 'middle', class: 'c-ax' }, nf(pw[i]));
+      el(svg, 'text', { x: cx, y: B + 18, 'text-anchor': 'middle', class: 'c-lab' }, 'Level ' + l);
+      el(svg, 'text', { x: cx, y: B + 34, 'text-anchor': 'middle', class: 'c-ax' }, '×' + nf(1 + pw[i] / 1000) + ' boost');
+    });
+    el(svg, 'text', { x: L, y: 12, class: 'c-lab' }, 'Squeek power');
+  }
+  chartIssue(0); chartPower();
+
   api('/v1/core').then(c => {
     const g = +c.configuration.genesisTimestamp, d = +c.configuration.roundDuration;
-    set('lvRound', '#' + (Math.floor((Date.now() / 1000 - g) / d) + 1));
+    set('lvRound', '#' + nf(Math.floor((Date.now() / 1000 - g) / d) + 1));
     set('lvWork', nf(+c.core.workPerThousandBlocks / 1000));
   }).catch(() => { set('lvRound', '–'); set('lvWork', '–'); });
-  api('/v1/economy/state').then(s => set('lvReward', nf(reward(+s.mining.fundedBlocks || 0))))
+  api('/v1/economy/state').then(s => { const f = +s.mining.fundedBlocks || 0; set('lvReward', nf(reward(f))); chartIssue(f); })
     .catch(() => set('lvReward', '≈ 3,674'));
   api('/v1/status').then(s => {
-    const m = s.measurement || {};
-    const on = m.coreStatus === 'ACTIVE';
+    const m = s.measurement || {}, on = m.coreStatus === 'ACTIVE';
     set('lvWheel', on ? 'Running · ' + nf((+m.speedMmPerSecond || 0) / 1000) + ' m/s' : 'Idle');
-    window.__wheelOn = on;
-    document.getElementById('wheelcap').innerHTML = on
-      ? '<b>Live:</b> the real hamster is running right now'
-      : 'The real wheel is idle right now. This one never stops.';
   }).catch(() => set('lvWheel', '–'));
-})();
 
-// ---------- hamster animations ----------
-(() => {
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const SK = { n: { body:'#e8a25c', belly:'#fbe7c8', ear:'#d98c45', cheek:'#f7c08a' },
-               q: { body:'#2fbf9b', belly:'#d9fff3', ear:'#1f9a7c', cheek:'#8ff0d4' } };
-  const E = (c, x, y, rx, ry) => { c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); c.fill(); };
-  const C = (c, x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); };
-  // the same hamster as in the game; (x, y) = feet, r = size
-  function ham(c, x, y, r, t, o = {}) {
-    const sk = o.teal ? SK.q : SK.n, rate = o.rate || 30;
-    const run = o.run ? Math.sin(t * rate) : 0, bob = o.run ? Math.abs(Math.sin(t * rate)) * r * 0.08 : 0;
-    c.save(); c.translate(x, y - bob); if (o.rot) c.rotate(o.rot); if (o.sx) c.scale(o.sx, o.sy || 1);
-    c.fillStyle = sk.ear; E(c, -r * 1.12, -r * 0.95 + Math.sin(t * 12) * r * 0.06, r * 0.16, r * 0.11);
-    c.fillStyle = '#f4b6a6';
-    if (o.air) { E(c, -r * 0.3, -r * 0.2, r * 0.2, r * 0.12); E(c, r * 0.35, -r * 0.2, r * 0.2, r * 0.12); }
-    else { E(c, -r * 0.45 + run * r * 0.23, -r * 0.08, r * 0.22, r * 0.12); E(c, r * 0.45 - run * r * 0.23, -r * 0.08, r * 0.22, r * 0.12); }
-    c.fillStyle = sk.body; E(c, 0, -r * 0.9, r * 1.15, r * 0.9);
-    c.fillStyle = sk.belly; E(c, r * 0.35, -r * 0.7, r * 0.65, r * 0.55);
-    c.fillStyle = sk.ear; C(c, r * 0.25, -r * 1.7, r * 0.26); C(c, -r * 0.3, -r * 1.65, r * 0.24);
-    c.fillStyle = '#f4b6a6'; C(c, r * 0.25, -r * 1.7, r * 0.13);
-    const ch = o.cheek || 1; c.fillStyle = sk.cheek; E(c, r * 0.85, -r * 0.85, r * 0.3 * ch, r * 0.26 * ch);
-    if (o.teal) { c.fillStyle = '#eafff8'; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) if ((i + j) % 2 === 0) C(c, -r * 0.75 + i * r * 0.18, -r * 1.25 + j * r * 0.18, r * 0.05); }
-    c.fillStyle = '#1a0f08';
-    if ((t + (o.seed || 0)) % 3.3 < 0.12) c.fillRect(r * 0.62, -r * 1.2, r * 0.22, r * 0.05);
-    else { C(c, r * 0.72, -r * 1.2, r * 0.11); c.fillStyle = '#fff'; C(c, r * 0.75, -r * 1.24, r * 0.04); }
-    c.fillStyle = '#e46b7a'; C(c, r * 1.12, -r * 1.0, r * 0.07);
-    c.strokeStyle = '#2a1a0c88'; c.lineWidth = Math.max(1, r * 0.04); c.beginPath();
-    c.moveTo(r * 1.05, -r * 0.98); c.lineTo(r * 1.45, -r * 1.08); c.moveTo(r * 1.05, -r * 0.94); c.lineTo(r * 1.45, -r * 0.9); c.stroke();
-    c.restore();
-  }
-  function seed(c, x, y, s, gold) {
-    c.save(); c.translate(x, y); c.rotate(0.5);
-    c.fillStyle = gold ? '#ffd54a' : '#3a3633'; E(c, 0, 0, 6 * s, 11 * s);
-    c.strokeStyle = gold ? '#fff6c8' : '#f4ecd6'; c.lineWidth = 2 * s;
-    c.beginPath(); c.moveTo(0, -8 * s); c.lineTo(0, 8 * s); c.stroke(); c.restore();
-  }
-  const font = (px, w = 500) => `${w} ${px}px Inter, system-ui, sans-serif`;
-  function fit(cv) { // match the canvas to its CSS size (crisp on retina)
-    const d = Math.min(2, devicePixelRatio || 1), w = cv.clientWidth, h = cv.clientHeight;
-    if (cv.width !== Math.round(w * d) || cv.height !== Math.round(h * d)) { cv.width = Math.round(w * d); cv.height = Math.round(h * d); }
-    const c = cv.getContext('2d'); c.setTransform(d, 0, 0, d, 0, 0); return [c, w, h];
-  }
-
-  // 1) hero: hamster in its wheel
-  const wheel = document.getElementById('wheel'); let ang = 0;
-  function drawWheel(t, dt) {
-    const [c, w, h] = fit(wheel); c.clearRect(0, 0, w, h);
-    const cx = w / 2, cy = h * 0.46, R = w * 0.4, on = window.__wheelOn;
-    ang += dt * (on ? 2.6 : 1.4);
-    c.strokeStyle = '#7a4a16'; c.lineWidth = w * 0.03; c.lineCap = 'round'; // stand
-    c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx - R * 0.55, h * 0.97); c.moveTo(cx, cy); c.lineTo(cx + R * 0.55, h * 0.97); c.stroke();
-    c.fillStyle = '#0005'; E(c, cx, h * 0.97, R * 0.8, w * 0.02);
-    c.strokeStyle = '#3a2a1e'; c.lineWidth = w * 0.012; // spokes
-    for (let i = 0; i < 6; i++) { const a = ang + i * Math.PI / 3; c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); c.stroke(); }
-    c.strokeStyle = '#c98a4a'; c.lineWidth = w * 0.022; // rims
-    c.beginPath(); c.arc(cx, cy, R, 0, Math.PI * 2); c.stroke();
-    c.strokeStyle = '#a86d35'; c.lineWidth = w * 0.012;
-    c.beginPath(); c.arc(cx, cy, R * 0.9, 0, Math.PI * 2); c.stroke();
-    c.strokeStyle = '#e0a868'; c.lineWidth = w * 0.01; // rungs
-    for (let i = 0; i < 30; i++) { const a = ang + i * Math.PI / 15; c.beginPath();
-      c.moveTo(cx + Math.cos(a) * R * 0.9, cy + Math.sin(a) * R * 0.9); c.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); c.stroke(); }
-    c.fillStyle = '#5fd3b5'; C(c, cx, cy, w * 0.03); // hub with a magnet, like the real one
-    c.fillStyle = '#e46b7a'; C(c, cx + Math.cos(ang) * R * 0.95, cy + Math.sin(ang) * R * 0.95, w * 0.018);
-    ham(c, cx, cy + R * 0.88, w * 0.1, t, { run: true, rate: on ? 34 : 22 });
-  }
-
-  // 2) economy loop: seeds → block → pending SQK → STAKE flag → staked
-  const econ = document.getElementById('econ');
-  const E2 = { items: [], next: 0, work: 0, block: 1, pend: 0, staked: 0, pops: [], flash: 0, hop: 0, vy: 0, y: 0, seeds: 0 };
-  const PER = 3674, WPB = 8.2;
-  function econStep(dt, w) {
-    const v = 150; E2.next -= v * dt;
-    while (E2.next <= 0) { // lay out the course ahead: arcs of seeds, a flag after every 16 seeds
-      E2.seeds++;
-      if (E2.seeds % 17 === 0) { E2.items.push({ x: w + 30 - E2.next, k: 'flag' }); E2.next += 120; }
-      else { const i = E2.seeds % 17; E2.items.push({ x: w + 30 - E2.next, k: 'seed', h: 18 + Math.sin(i / 4 * Math.PI) * 18 }); E2.next += 44; }
-    }
-    for (const it of E2.items) it.x -= v * dt;
-    E2.y += E2.vy * dt; E2.vy += 900 * dt; if (E2.y > 0) { E2.y = 0; E2.vy = 0; }
-    for (const it of E2.items) {
-      if (it.done || it.x > w * 0.2 + 10) continue;
-      it.done = true;
-      if (it.k === 'seed') {
-        E2.work += 1;
-        if (E2.work >= WPB) { E2.work -= WPB; E2.block++; E2.pend += PER; E2.flash = 0.6;
-          E2.pops.push({ x: w * 0.2 + 20, y: 70, t: 1.4, s: 'Block mined +3,674 SQK', col: '#ffd54a' }); }
-      } else {
-        if (E2.vy === 0) E2.vy = -260;
-        if (E2.pend) { E2.pops.push({ x: w * 0.2 + 30, y: 64, t: 1.6, s: `Staked ${E2.pend.toLocaleString('en')} SQK`, col: '#5fd3b5' }); E2.staked += E2.pend; E2.pend = 0; }
-      }
-    }
-    E2.items = E2.items.filter(it => it.x > -40);
-    for (const p of E2.pops) { p.t -= dt; p.y -= 22 * dt; }
-    E2.pops = E2.pops.filter(p => p.t > 0); E2.flash = Math.max(0, E2.flash - dt);
-  }
-  function drawEcon(t, dt) {
-    const [c, w, h] = fit(econ);
-    if (!E2.warm) { E2.warm = true; for (let i = 0; i < 150; i++) econStep(1 / 30, w); E2.pops = []; } // start mid-run, not empty
-    if (dt) econStep(dt, w);
-    c.clearRect(0, 0, w, h);
-    const g = h - 34;
-    c.fillStyle = '#5a3b22'; c.fillRect(0, g, w, h - g); c.fillStyle = '#6e4a2c'; c.fillRect(0, g, w, 5);
-    c.fillStyle = '#4a3020'; for (let x = (-t * 150) % 60; x < w; x += 60) c.fillRect(x, g + 14, 18, 3);
-    for (const it of E2.items) {
-      if (it.k === 'seed') { if (!it.done) seed(c, it.x, g - it.h - 14, 0.9); }
-      else {
-        c.fillStyle = '#d9c3a0'; c.fillRect(it.x - 2, g - 82, 4, 82);
-        c.fillStyle = '#5fd3b5'; c.beginPath(); c.moveTo(it.x + 2, g - 82); c.lineTo(it.x + 40, g - 72 + Math.sin(t * 6) * 2); c.lineTo(it.x + 2, g - 60); c.fill();
-        c.fillStyle = '#103a30'; c.font = font(9, 700); c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText('STAKE', it.x + 5, g - 71);
-      }
-    }
-    ham(c, w * 0.2, g + E2.y, 23, t, { run: E2.y === 0, air: E2.y < 0, cheek: 1 + (E2.work / WPB) * 0.5 });
-    // block bar + counters
-    c.textBaseline = 'middle'; c.textAlign = 'left'; c.font = font(13);
-    c.fillStyle = '#fbe9d0'; c.fillText('Block ' + E2.block, 14, 20);
-    c.fillStyle = '#ffffff22'; c.fillRect(74, 14, 110, 12);
-    c.fillStyle = E2.flash ? '#ffd54a' : '#5fd3b5'; c.fillRect(74, 14, 110 * Math.min(1, E2.work / WPB), 12);
-    c.textAlign = 'right'; c.fillStyle = '#ffd54a'; c.fillText(E2.pend ? 'pending ' + E2.pend.toLocaleString('en') : 'pending 0', w - 14, 20);
-    c.fillStyle = '#5fd3b5'; c.fillText('staked ' + E2.staked.toLocaleString('en'), w - 14, 40);
-    c.textAlign = 'center'; c.font = font(14, 700);
-    for (const p of E2.pops) { c.globalAlpha = Math.min(1, p.t * 2); c.fillStyle = '#0009'; c.fillText(p.s, p.x + 60 + 1, p.y + 1); c.fillStyle = p.col; c.fillText(p.s, p.x + 60, p.y); }
-    c.globalAlpha = 1;
-  }
-
-  // 3) merge: two Level 1 Squeeks become one Level 2
-  const merge = document.getElementById('merge');
-  function drawMerge(t) {
-    const [c, w, h] = fit(merge); c.clearRect(0, 0, w, h);
-    const g = h - 38, L = 4.2, k = (t % L) / L, cx = w / 2;
-    c.fillStyle = '#ffffff10'; c.fillRect(0, g, w, 2);
-    c.textAlign = 'center'; c.textBaseline = 'middle';
-    if (k < 0.32) { // walk together
-      const p = Math.min(1, k / 0.3), off = (1 - p) * w * 0.28 + 26;
-      ham(c, cx - off, g, 22, t, { teal: true, run: p < 1, rate: 24 });
-      ham(c, cx + off, g, 22, t, { teal: true, run: p < 1, rate: 24, sx: -1, seed: 1.3 });
-      c.font = font(13); c.fillStyle = '#cdb89c';
-      c.fillText('Level 1 · 1,000', cx - off, g + 20); c.fillText('Level 1 · 1,000', cx + off, g + 20);
-    } else if (k < 0.42) { // pop
-      const q = (k - 0.32) / 0.1;
-      c.fillStyle = `rgba(255,213,74,${1 - q})`; C(c, cx, g - 26, 20 + q * 60);
-      ham(c, cx, g, 22 + q * 8, t, { teal: true, sx: 1 + Math.sin(q * Math.PI) * 0.3, sy: 1 - Math.sin(q * Math.PI) * 0.25 });
-    } else { // the survivor, a level higher
-      const q = Math.min(1, (k - 0.42) / 0.12), hop = Math.max(0, Math.sin((k - 0.42) * 14)) * 10 * (1 - q * 0.6);
-      ham(c, cx, g - hop, 30, t, { teal: true, air: hop > 1 });
-      c.font = font(15, 700); c.fillStyle = '#5fd3b5'; c.fillText('Level 2 · 2,200 power', cx, g + 20);
-      c.globalAlpha = q; c.font = font(13); c.fillStyle = '#ffd54a'; c.fillText('+10% vs the pair · staking boost x3.2', cx, 22); c.globalAlpha = 1;
-    }
-  }
-
-  // 4) reading progress: a little hamster runs along the bar under the header
-  const tocLinks = [...document.querySelectorAll('#side a')];
-  const spy = new IntersectionObserver(es => { for (const e of es) if (e.isIntersecting) tocLinks.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id)); }, { rootMargin: '-30% 0px -60% 0px' });
-  document.querySelectorAll('main section').forEach(s => spy.observe(s));
-  const runner = document.getElementById('runner'), prog = document.getElementById('prog');
-  let lastScroll = -1, movingT = 0, pr = 0;
-  function drawRunner(t, dt) {
-    const max = document.documentElement.scrollHeight - innerHeight, y = scrollY;
-    const target = max > 0 ? Math.min(1, y / max) : 0;
-    if (y !== lastScroll) { movingT = 0.25; lastScroll = y; } else movingT = Math.max(0, movingT - dt);
-    pr += (target - pr) * Math.min(1, dt * 10);
-    const tw = runner.parentElement.clientWidth;
-    prog.style.width = (pr * 100).toFixed(2) + '%';
-    runner.style.transform = `translateX(${Math.max(0, pr * tw - 30)}px)`;
-    const c = runner.getContext('2d'); c.setTransform(2, 0, 0, 2, 0, 0); c.clearRect(0, 0, 44, 30);
-    ham(c, 18, 28, 10, t, { run: movingT > 0, rate: 30 });
-  }
-
-  // one loop; only visible canvases are drawn
-  const vis = new Map();
-  const io = new IntersectionObserver(es => es.forEach(e => vis.set(e.target, e.isIntersecting)));
-  [wheel, econ, merge].forEach(el => io.observe(el));
-  let last = performance.now(), T = 0;
-  function frame(now) {
-    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now; T += dt;
-    if (vis.get(wheel)) drawWheel(T, dt);
-    if (vis.get(econ)) drawEcon(T, dt);
-    if (vis.get(merge)) drawMerge(T);
-    drawRunner(T, dt);
-    if (!reduce) requestAnimationFrame(frame);
-  }
-  if (reduce) { // still frames only
-    drawWheel(0, 0); for (let i = 0; i < 120; i++) econStep(1 / 30, econ.clientWidth); drawEcon(0, 0); drawMerge(3); drawRunner(0, 0);
-    addEventListener('scroll', () => drawRunner(0, 0), { passive: true });
-  } else requestAnimationFrame(frame);
-  addEventListener('resize', () => { last = performance.now(); });
+  // reading progress + active section in the sidebar
+  const prog = document.getElementById('prog');
+  const onScroll = () => { const h = document.documentElement, pr = h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight); prog.style.width = (pr * 100).toFixed(2) + '%'; };
+  addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  const links = [...document.querySelectorAll('#side a')];
+  const spy = new IntersectionObserver(es => { for (const e of es) if (e.isIntersecting) links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id)); }, { rootMargin: '-25% 0px -65% 0px' });
+  document.querySelectorAll('main section, #abstract').forEach(s => spy.observe(s));
 })();
 </script>
 </body>
