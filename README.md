@@ -1,5 +1,9 @@
 # 🐹 Hamster Dash
 
+**Play:** [hamsterdash.site](https://hamsterdash.site) · **Whitepaper:** [hamsterdash.site/whitepaper](https://hamsterdash.site/whitepaper/)
+
+![Hamster Dash menu](assets/menu.png)
+
 A Squeekchain community game: a tiny, dependency-free HTML5 endless runner where you race the real Squeekchain hamster. Help the hamster dash through the burrow, hop over pebbles and roots, and stuff its cheeks with sunflower seeds (they really do get bigger).
 
 ## How Squeekchain powers the game
@@ -19,6 +23,8 @@ Everything is read straight from the browser — **no wallet connection, no sign
 - **Economy panel** from [`/v1/economy/state`](https://api.squeekchain.com/v1/economy/state): settled on-chain round, SQK live supply and staked, Squeeks alive, SQK per block now, issuance period, work per block, your Dash stake.
 
 Full write-up: [hamsterdash.site/whitepaper](https://hamsterdash.site/whitepaper/)
+
+![Whitepaper with live Squeekchain stats](assets/whitepaper.png)
 
 ## Controls
 - **Space / ↑ / W** or **tap** — hop; hold for a higher hop, press again mid-air for a double hop
