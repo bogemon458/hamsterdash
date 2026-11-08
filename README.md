@@ -4,6 +4,8 @@
 
 ![Hamster Dash menu](assets/menu.png)
 
+![Sunset Hills gameplay](assets/gameplay.png)
+
 A Squeekchain community game: a tiny, dependency-free HTML5 endless runner where you race the real Squeekchain hamster. Help the hamster dash through the burrow, hop over pebbles and roots, and stuff its cheeks with sunflower seeds (they really do get bigger).
 
 ## How Squeekchain powers the game
