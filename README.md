@@ -28,6 +28,18 @@ Full write-up: [hamsterdash.site/whitepaper](https://hamsterdash.site/whitepaper
 
 ![Whitepaper with live Squeekchain stats](assets/whitepaper.png)
 
+## Characters
+Pick one of six hamsters in the menu. Each trades one strength for one weakness; the course is the same for everyone.
+
+| | Hamster | Strength | Trade-off |
+|---|---|---|---|
+| <img src="assets/chars/pip.png" width="60"> | **Pip**, The Golden Classic | Balanced | none |
+| <img src="assets/chars/mochi.png" width="60"> | **Mochi**, Winter White | Held hops reach 24% higher | Double hop 12% weaker |
+| <img src="assets/chars/biscuit.png" width="60"> | **Biscuit**, Cinnamon Glutton | Grabs seeds from 40% further | Hops 10% lower |
+| <img src="assets/chars/nova.png" width="60"> | **Nova**, Blue Russian Dwarf | Starts every run shielded | Golden seeds half as common |
+| <img src="assets/chars/ziggy.png" width="60"> | **Ziggy**, Panda Brawler | 75 per stomp, bigger bounce | Fast fall 50% weaker |
+| <img src="assets/chars/squeek.png" width="60"> | **Squeek**, Chain Runner | Teal LED skin (cosmetic) | Unlocks for Squeek holders |
+
 ## Controls
 - **Space / ↑ / W** or **tap** — hop; hold for a higher hop, press again mid-air for a double hop
 - **↓ / S** or the **⬇ button** on phones — duck (mid-air: fast fall)

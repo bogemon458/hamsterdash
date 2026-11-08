@@ -161,6 +161,15 @@
   footer .gh { display:inline-flex; align-items:center; gap:6px; }
   footer .gh svg { width:14px; height:14px; }
 
+  .chars { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin:8px 0 22px; font-family:var(--sans); }
+  .chars > div { border:1px solid var(--line); border-radius:12px; background:var(--surface); padding:14px 16px 16px; }
+  .chars img { width:96px; height:80px; display:block; margin:0 0 8px -6px; object-fit:contain; }
+  .chars h4 { font-size:15px; color:#fff; display:flex; align-items:baseline; gap:8px; }
+  .chars h4 small { font-size:12px; font-weight:500; color:var(--dim); }
+  .chars p { font-size:13px; line-height:1.55; color:var(--dim); margin:6px 0 0; }
+  .chars p b { color:var(--sq); font-weight:600; } .chars p i { font-style:normal; color:#ff9f80; }
+  @media (max-width:760px) { .chars { grid-template-columns:1fr 1fr; } }
+  @media (max-width:460px) { .chars { grid-template-columns:1fr; } }
   /* svg diagram palette */
   .d-box { fill:var(--raised); stroke:var(--line2); }
   .d-hi { fill:#5fd3b512; stroke:#5fd3b566; }
@@ -338,9 +347,20 @@
       <tr><td>Golden seed</td><td>Collect</td><td>Shield that absorbs one hit.</td></tr>
     </table></div>
     <h3><span class="n">3.1</span>Scoring</h3>
-    <div class="eq"><span class="f"><var>score</var> = 10 · <var>seeds</var> + ⌊<var>d</var> / 100⌋ + Σ<sub><var>k</var></sub> 50 · <var>c</var><sub><var>k</var></sub><span class="w"><var>d</var> = distance in game units (100 units = 1 m), <var>c</var><sub><var>k</var></sub> = position of stomp <var>k</var> in its airborne chain (1, 2, 3 …)</span></span><span class="no">(1)</span></div>
+    <div class="eq"><span class="f"><var>score</var> = 10 · <var>seeds</var> + ⌊<var>d</var> / 100⌋ + Σ<sub><var>k</var></sub> 50 · <var>c</var><sub><var>k</var></sub><span class="w"><var>d</var> = distance in game units (100 units = 1 m), <var>c</var><sub><var>k</var></sub> = position of stomp <var>k</var> in its airborne chain (1, 2, 3 …). Ziggy's stomps use 75 instead of 50.</span></span><span class="no">(1)</span></div>
     <p>Chained stomps (hitting several flyers without touching the ground) are worth 50, 100, 150 … points. Score deliberately ignores wallets and Squeeks, so holdings can boost the simulated SQK (§6.5) but never the leaderboard number.</p>
-    <h3><span class="n">3.2</span>Hazards</h3>
+    <h3 id="characters"><span class="n">3.2</span>Characters</h3>
+    <p>Players choose one of six hamsters before a run. Each one trades a strength for a weakness, so no character is strictly better and the course stays identical for everyone (§4). Five are open to all players. The sixth is a cosmetic reward for Squeek holders and has no gameplay advantage.</p>
+    <div class="chars">
+      <div><img src="../assets/chars/pip.png" alt="Pip"><h4>Pip <small>The Golden Classic</small></h4><p><b>Balanced.</b> The reference hamster: standard hop, reach and stomp.</p></div>
+      <div><img src="../assets/chars/mochi.png" alt="Mochi"><h4>Mochi <small>Winter White</small></h4><p><b>Held hops 24% higher.</b> <i>Double hop 12% weaker.</i> Built for long, floaty arcs.</p></div>
+      <div><img src="../assets/chars/biscuit.png" alt="Biscuit"><h4>Biscuit <small>Cinnamon Glutton</small></h4><p><b>Seed reach +40%.</b> <i>Hops 10% lower.</i> Cheeks grow faster too.</p></div>
+      <div><img src="../assets/chars/nova.png" alt="Nova"><h4>Nova <small>Blue Russian Dwarf</small></h4><p><b>Starts shielded.</b> <i>Golden seeds ×0.5.</i> Forgiving opening, fewer second chances.</p></div>
+      <div><img src="../assets/chars/ziggy.png" alt="Ziggy"><h4>Ziggy <small>Panda Brawler</small></h4><p><b>75 per stomp, bigger bounce.</b> <i>Fast fall −50%.</i> Rewards aggressive play.</p></div>
+      <div><img src="../assets/chars/squeek.png" alt="Squeek"><h4>Squeek <small>Chain Runner</small></h4><p><b>Teal LED skin.</b> Unlocks when a checked address holds a Squeek. Cosmetic only.</p></div>
+    </div>
+
+    <h3><span class="n">3.3</span>Hazards</h3>
     <div class="tbl"><table>
       <tr><th>Hazard</th><th>Appears</th><th>Answer</th></tr>
       <tr><td>Pebble, pebble pair, clay mound</td><td>From the start</td><td>Hop</td></tr>
@@ -487,7 +507,7 @@
     <ul class="timeline">
       <li class="done"><em>v1.0 · Nov 2026</em><b>Launch</b><span>Endless runner, round-seeded courses, live wheel coupling, read-only Squeek check.</span></li>
       <li class="done"><em>v1.1 · Nov 2026</em><b>Economy model</b><span>Work at live difficulty, real issuance schedule, checkpoints, Dash stake, Squeek power boost, this whitepaper.</span></li>
-      <li class="done"><em>v1.2 · Nov 2026</em><b>Gameplay and presentation</b><span>Stomps with combos, hazard-safe seed placement and seed arcs, painted parallax worlds with smooth area transitions.</span></li>
+      <li class="done"><em>v1.2 · Nov 2026</em><b>Gameplay and presentation</b><span>Six playable hamsters, stomps with combos, hazard-safe seed placement and seed arcs, painted parallax worlds with smooth area transitions.</span></li>
       <li><em>Next</em><b>Per-round leaderboard</b><span>Shared board per Squeekchain round, with replay-based verification. Because a course is a pure function of <var>n</var>, inputs can be re-simulated to validate a score.</span></li>
       <li><em>At mainnet</em><b>Optional signed scores</b><span>Opt-in signed submissions bound to an address, only once Squeekchain mainnet parameters are final. Read-only mode stays the default.</span></li>
     </ul>
