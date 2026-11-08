@@ -142,6 +142,21 @@
   #result .fine { margin-top:10px; font-size:11px; opacity:.5; line-height:1.4; }
   @media (max-width:420px) { #result .grid { grid-template-columns:1fr 1fr; } #result .score { font-size:46px; } }
   /* menu: one compact character button */
+  /* menu corners (desktop); on narrow screens everything stacks under Play */
+  .corner { position:fixed; z-index:6; display:flex; flex-direction:column; gap:8px; }
+  .corner.tl { top:14px; left:16px; }
+  .corner.bl { left:16px; bottom:16px; align-items:flex-start; margin:0; }
+  .corner.br { right:16px; bottom:14px; align-items:flex-end; text-align:right; }
+  .corner.br #more { width:auto; max-width:420px; text-align:right; }
+  .corner.br #more[open] { width:420px; }
+  .corner.br #more summary { text-align:right; padding:4px 0; }
+  #overlay.intro .corner { animation:fadeUp .6s ease-out 1.35s both; }
+  @media (max-width:760px), (max-height:520px) {
+    .corner { position:static; align-items:center !important; text-align:center !important; }
+    .corner.tl { order:1; } #overlay .bottom { order:2; } .corner.bl { order:3; } .corner.br { order:4; }
+    .corner.bl { flex-direction:row; flex-wrap:wrap; justify-content:center; }
+    .corner.br #more, .corner.br #more[open] { width:100%; text-align:left; } .corner.br #more summary { text-align:center; }
+  }
   .charbtn { all:unset; cursor:pointer; display:inline-flex; align-items:center; gap:10px; padding:5px 14px 5px 6px; border-radius:999px;
     background:#1b1410cc; border:1px solid #ffffff22; font-size:14px; color:var(--fg); }
   .charbtn:hover { border-color:var(--accent); }
@@ -198,29 +213,30 @@
   </header>
   <section id="result" hidden aria-live="polite"></section>
   <div class="bottom">
-  <main class="card">
-    <button class="charbtn" id="charbtn" type="button" aria-label="Change hamster"><canvas width="80" height="68"></canvas><span><small>Hamster</small><b id="charname">Pip</b></span><em>Change</em></button>
-    <button id="play">Play</button>
-    <div class="chips">
-      <span class="chip" id="chipRound">Round …</span>
-      <span class="chip" id="live"><span class="dot"></span><span id="livetxt">Wheel …</span></span>
-      <span class="chip" id="course">Best this round 0</span>
-    </div>
-  </main>
-  <div class="keys"><span><kbd>Space</kbd>/ tap: hop, hold higher, twice = double</span><span><kbd>↓</kbd>duck</span><span><kbd>Land</kbd>on eagles &amp; bats to stomp</span><span><kbd>Flag</kbd>stakes your SQK</span></div>
-  <details id="more">
-    <summary>Squeekchain stats &amp; Squeek skin</summary>
-    <section id="sq" aria-live="polite">
-      <h2>Squeekchain economy <small id="sqnet">loading…</small></h2>
-      <div id="stats"></div>
-      <div id="own">
-        <b>Got a Squeek?</b> Paste a wallet address. Staked Squeeks boost the SQK you mine the same way they boost staking: x(1 + power / 1,000), Level 1 = x2, each level 2.2× more power. Read-only, nothing to connect or sign.
-        <form id="ownform"><input id="addr" placeholder="0x…" autocomplete="off" spellcheck="false"><button type="submit">Check</button></form>
-        <div id="ownmsg"></div>
-      </div>
-    </section>
-  </details>
-  <div class="hint credit"><a class="wp" href="whitepaper/">Read the whitepaper</a> · Built for <a href="https://squeekchain.com" target="_blank" rel="noopener">Squeekchain</a></div>
+    <main class="card"><button id="play">Play</button></main>
+    <div class="keys"><span><kbd>Space</kbd>/ tap: hop, hold higher, twice = double</span><span><kbd>↓</kbd>duck</span><span><kbd>Land</kbd>on eagles &amp; bats to stomp</span><span><kbd>Flag</kbd>stakes your SQK</span></div>
+  </div>
+  <!-- corners: character (top left), course chips (bottom left), Squeekchain panel + links (bottom right) -->
+  <div class="corner tl"><button class="charbtn" id="charbtn" type="button" aria-label="Change hamster"><canvas width="80" height="68"></canvas><span><small>Hamster</small><b id="charname">Pip</b></span><em>Change</em></button></div>
+  <div class="corner bl chips">
+    <span class="chip" id="chipRound">Round …</span>
+    <span class="chip" id="live"><span class="dot"></span><span id="livetxt">Wheel …</span></span>
+    <span class="chip" id="course">Best this round 0</span>
+  </div>
+  <div class="corner br">
+    <details id="more">
+      <summary>Squeekchain stats &amp; Squeek skin</summary>
+      <section id="sq" aria-live="polite">
+        <h2>Squeekchain economy <small id="sqnet">loading…</small></h2>
+        <div id="stats"></div>
+        <div id="own">
+          <b>Got a Squeek?</b> Paste a wallet address. Staked Squeeks boost the SQK you mine the same way they boost staking: x(1 + power / 1,000), Level 1 = x2, each level 2.2× more power. Read-only, nothing to connect or sign.
+          <form id="ownform"><input id="addr" placeholder="0x…" autocomplete="off" spellcheck="false"><button type="submit">Check</button></form>
+          <div id="ownmsg"></div>
+        </div>
+      </section>
+    </details>
+    <div class="hint credit"><a class="wp" href="whitepaper/">Read the whitepaper</a> · Built for <a href="https://squeekchain.com" target="_blank" rel="noopener">Squeekchain</a></div>
   </div>
 </div>
 <div id="select" hidden role="dialog" aria-modal="true" aria-labelledby="selt">
