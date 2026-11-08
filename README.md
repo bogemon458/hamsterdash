@@ -6,7 +6,7 @@
 
 ![Sunset Hills gameplay](assets/gameplay.png)
 
-A Squeekchain community game: a tiny, dependency-free HTML5 endless runner where you race the real Squeekchain hamster. Help the hamster dash through the burrow, hop over pebbles and roots, and stuff its cheeks with sunflower seeds (they really do get bigger).
+A Squeekchain community game: a dependency-free, pixel-art HTML5 endless runner where you race the real Squeekchain hamster. Dash through four worlds, stomp eagles and bats, bank your seeds in the Seed Shop, clear daily missions, and mine simulated SQK on the chain's real issuance rules.
 
 ## How Squeekchain powers the game
 Everything is read straight from the browser — **no wallet connection, no signatures, no transactions**.
@@ -27,6 +27,14 @@ Everything is read straight from the browser — **no wallet connection, no sign
 Full write-up: [hamsterdash.site/whitepaper](https://hamsterdash.site/whitepaper/)
 
 ![Whitepaper with live Squeekchain stats](assets/whitepaper.png)
+
+## Progression
+- **Seed bank.** Every seed from a run is banked when the run ends.
+- **Seed Shop.** Six permanent upgrades: Magnet Cheeks (seed reach), Spring Paws (hop height), Lucky Husk (golden seeds), Stomp Boots (stomp points), Seed Pouch (more seeds banked) and Second Wind (survive one fatal hit per run).
+- **Daily missions.** Three missions a day, the same for every player (seeded by the UTC date), worth 40 / 70 / 110 seeds.
+- **Your record.** Lifetime runs, best score, seeds, stomps and metres.
+
+Upgrades change your tools, never the course: obstacles and seeds still come only from the round seed.
 
 ## Characters
 Pick one of six hamsters in the menu. Each trades one strength for one weakness; the course is the same for everyone.
@@ -52,11 +60,11 @@ Pick one of six hamsters in the menu. Each trades one strength for one weakness;
 - Air enemies from 50 m: eagles in daylight, bats underground and at night — high flyers punish a jump, mid flyers must be ducked (or hopped), low flyers must be hopped; a red "!" warns before they arrive
 - Pebbles, roots, mounds and pebble pairs; spacing always leaves room for a full hop at the current speed
 - Seed rows are placed clear of hazards (with a reaction gap), and some seed arcs trace the hop over an obstacle
-- Painted parallax backdrops (sky, clouds, mountains, trees, bushes, textured soil), generated procedurally in the browser: no image files
+- Pixel art generated in code, no image files: the world renders at about 250 px tall and scales up in whole device pixels; sprites are lit, quantised into hue-shifted colour ramps with ordered dithering and outlined; tiling parallax backdrops (sky, clouds, mountains, trees, crystals, layered soil); a hex-lattice energy shield
 - Golden seeds grant a one-hit shield; the hamster's cheeks grow as it eats
 - Coyote time + jump buffering for forgiving controls; milestones, score pop-ups, screen shake
-- Synthesized sound effects (Web Audio, no asset files); best score saved locally
-- Performance: cached background layer, DOM only touched when the score changes, resolution capped on phones, auto-pause when the tab is hidden
+- Synthesized sound effects and a chiptune soundtrack (Web Audio, no asset files); music and sound toggle separately
+- Performance: steady 60 fps; tiny low-res canvas, backdrop layers painted once per screen size, DOM only touched when the score changes, auto-pause when the tab is hidden
 
 ## Run locally
 Just open `index.html` in a browser — no build step, no backend.

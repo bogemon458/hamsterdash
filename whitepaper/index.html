@@ -168,7 +168,7 @@
 
   .chars { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin:8px 0 22px; font-family:var(--sans); }
   .chars > div { border:1px solid var(--line); border-radius:12px; background:var(--surface); padding:14px 16px 16px; }
-  .chars img { width:96px; height:80px; display:block; margin:0 0 8px -6px; object-fit:contain; }
+  .chars img { width:110px; height:85px; display:block; margin:0 0 8px -6px; object-fit:contain; image-rendering:pixelated; }
   .chars h4 { font-size:15px; color:#fff; display:flex; align-items:baseline; gap:8px; }
   .chars h4 small { font-size:12px; font-weight:500; color:var(--dim); }
   .chars p { font-size:13px; line-height:1.55; color:var(--dim); margin:6px 0 0; }
@@ -227,7 +227,7 @@
 </aside>
 
 <main>
-  <div class="kicker">Technical whitepaper · Version 1.2</div>
+  <div class="kicker">Technical whitepaper · Version 1.3</div>
   <h1>Hamster Dash<span class="sub">A deterministic, read-only game model of Squeekchain's proof-of-wheel economy</span></h1>
   <div class="byline"><span>By <b>Hamster Dash contributors</b></span><span>Published <b>November 2026</b></span><span>Status <b>Live on hamsterdash.site</b></span></div>
   <div class="actions">
@@ -315,7 +315,7 @@
           <rect class="d-box" x="542" y="218" width="192" height="52" rx="6"/>
           <text class="d-s" x="554" y="240">Game loop: course generator,</text>
           <text class="d-s" x="554" y="258">physics, renderer</text>
-          <rect class="d-box" x="542" y="282" width="192" height="30" rx="6"/><text class="d-s" x="554" y="302">localStorage (scores, stake)</text>
+          <rect class="d-box" x="542" y="282" width="192" height="30" rx="6"/><text class="d-s" x="554" y="302">localStorage (scores, stake, shop)</text>
 
           <path class="d-a" d="M200 108 H258"/>
           <path class="d-ad" d="M200 238 H258"/>
@@ -342,7 +342,7 @@
 
   <section id="gameplay">
     <h2><span class="n">3</span>Gameplay model</h2>
-    <p>The player controls a hamster that runs to the right at a speed set by distance alone (§4.3). The world cycles through four areas every 150 m (the Burrow, Sunny Meadow, Sunset Hills and Night Forest), each with its own hazards and painted parallax backdrop.</p>
+    <p>The player controls a hamster that runs to the right at a speed set by distance alone (§4.3). The world cycles through four areas every 150 m (the Burrow, Sunny Meadow, Sunset Hills and Night Forest), each with its own hazards and pixel-art parallax backdrop.</p>
     <div class="tbl"><table>
       <tr><th>Action</th><th>Input</th><th>Effect</th></tr>
       <tr><td>Hop</td><td>Space, ↑, W, tap</td><td>Jump. Holding lowers gravity on the way up for a higher hop.</td></tr>
@@ -353,7 +353,7 @@
     </table></div>
     <h3><span class="n">3.1</span>Scoring</h3>
     <div class="eq"><span class="f"><var>score</var> = 10 · <var>seeds</var> + ⌊<var>d</var> / 100⌋ + Σ<sub><var>k</var></sub> 50 · <var>c</var><sub><var>k</var></sub><span class="w"><var>d</var> = distance in game units (100 units = 1 m), <var>c</var><sub><var>k</var></sub> = position of stomp <var>k</var> in its airborne chain (1, 2, 3 …). Ziggy's stomps use 75 instead of 50.</span></span><span class="no">(1)</span></div>
-    <p>Chained stomps (hitting several flyers without touching the ground) are worth 50, 100, 150 … points. Score deliberately ignores wallets and Squeeks, so holdings can boost the simulated SQK (§6.5) but never the leaderboard number.</p>
+    <p>Chained stomps (hitting several flyers without touching the ground) are worth 50, 100, 150 … points. Score deliberately ignores wallets and Squeeks, so holdings can boost the simulated SQK (§6.5) but never the leaderboard number. The Stomp Boots upgrade (§3.4) adds 15 points per level to the stomp base.</p>
     <h3 id="characters"><span class="n">3.2</span>Characters</h3>
     <p>Players choose one of six hamsters before a run. Each one trades a strength for a weakness, so no character is strictly better and the course stays identical for everyone (§4). Five are open to all players. The sixth is a cosmetic reward for Squeek holders and has no gameplay advantage.</p>
     <div class="chars">
@@ -374,6 +374,22 @@
       <tr><td>Flyer, mid height</td><td>After 50 m</td><td>Duck, hop over, or stomp</td></tr>
       <tr><td>Flyer, high</td><td>After 50 m</td><td>Stay grounded, or stomp from a full hop</td></tr>
     </table></div>
+
+    <h3 id="progression"><span class="n">3.4</span>Progression: seed bank, shop and daily missions</h3>
+    <p>Runs feed a persistent meta-game. Every seed collected in a run is added to a <b>seed bank</b> when the run ends (more with the Seed Pouch upgrade). The bank buys permanent upgrades in the <b>Seed Shop</b>, and three <b>daily missions</b> pay extra seeds. Upgrades change the player's tools, never the course: obstacle and seed placement still come only from the round seed (§4), so two players in the same round always face the same course.</p>
+    <div class="tbl"><table>
+      <tr><th>Upgrade</th><th>Effect per level</th><th>Levels</th><th>Cost (seeds)</th></tr>
+      <tr><td>Magnet Cheeks</td><td>+10% seed reach</td><td>5</td><td>40 · 90 · 160 · 260 · 400</td></tr>
+      <tr><td>Spring Paws</td><td>+2.5% hop height</td><td>4</td><td>60 · 130 · 240 · 380</td></tr>
+      <tr><td>Lucky Husk</td><td>+20% golden (shield) seed chance</td><td>5</td><td>50 · 110 · 200 · 320 · 480</td></tr>
+      <tr><td>Stomp Boots</td><td>+15 points per stomp</td><td>5</td><td>40 · 90 · 160 · 260 · 400</td></tr>
+      <tr><td>Seed Pouch</td><td>+10% seeds banked after a run</td><td>5</td><td>80 · 170 · 300 · 480 · 700</td></tr>
+      <tr><td>Second Wind</td><td>Survive one fatal hit per run (1.6 s of invulnerability)</td><td>1</td><td>900</td></tr>
+    </table></div>
+    <p>Daily missions are drawn from eight templates (seeds in one run, distance, stomps, golden seeds, checkpoints, stomp combo, blocks mined, runs finished) by an RNG seeded with the UTC date, <code>mulberry32(hash("hamsterdash/missions/" + date))</code>. Every player therefore gets the same three missions on the same day, at easy, medium and hard tiers worth 40, 70 and 110 seeds. Rewards are credited the moment a mission completes.</p>
+
+    <h3 id="renderer"><span class="n">3.5</span>Pixel renderer</h3>
+    <p>All art is generated in code; the game ships no image files. The world is drawn at a low internal resolution (about 250 pixels tall) and scaled up by a whole number of device pixels with nearest-neighbour filtering, so every art pixel is a crisp square on any screen. Sprites are rasterised procedurally: each shape is lit as a sphere or a flat face from the upper left, quantised into five-step hue-shifted colour ramps with 4×4 ordered (Bayer) dithering, then given a one-pixel outline. Backdrops are periodic ridges, value noise and stamped tree, cloud and crystal sprites, painted once per screen size into tiling parallax layers. The shield is re-rasterised every frame as a rotating hexagonal lattice. Rendering holds a steady 60 fps, area changes included.</p>
   </section>
 
   <section id="courses">
@@ -500,7 +516,8 @@
   <section id="limits">
     <h2><span class="n">9</span>Limitations</h2>
     <ul>
-      <li><b>Local state only.</b> Scores, round bests and the Dash stake live in one browser. Clearing site data resets them.</li>
+      <li><b>Local state only.</b> Scores, round bests, the Dash stake, the seed bank, upgrades and mission progress live in one browser. Clearing site data resets them.</li>
+      <li><b>Upgrades affect scores.</b> The course is identical for everyone, but upgraded players have better tools. A shared leaderboard would need to show upgrade levels or keep a separate unupgraded board.</li>
       <li><b>Testnet parameters.</b> Squeekchain currently runs on Sepolia, and difficulty, issuance start and contract addresses may change at mainnet. The game reads what it can live, and §6 constants will be revised if the published rules change.</li>
       <li><b>Model, not a mirror.</b> The economy follows the chain's formulas but runs at game speed. One run can complete many blocks, far more than one player's share of real wheel work.</li>
       <li><b>Wheel effects depend on the hamster.</b> When the wheel is idle, the live effects are intentionally absent.</li>
@@ -513,6 +530,7 @@
       <li class="done"><em>v1.0 · Nov 2026</em><b>Launch</b><span>Endless runner, round-seeded courses, live wheel coupling, read-only Squeek check.</span></li>
       <li class="done"><em>v1.1 · Nov 2026</em><b>Economy model</b><span>Work at live difficulty, real issuance schedule, checkpoints, Dash stake, Squeek power boost, this whitepaper.</span></li>
       <li class="done"><em>v1.2 · Nov 2026</em><b>Gameplay and presentation</b><span>Six playable hamsters, stomps with combos, hazard-safe seed placement and seed arcs, painted parallax worlds with smooth area transitions.</span></li>
+      <li class="done"><em>v1.3 · Nov 2026</em><b>Pixel art and progression</b><span>Full pixel-art renderer (procedural sprites, dithered backdrops, hex-lattice shield), seed bank and Seed Shop, daily missions, lifetime record, chiptune soundtrack, new menu and navigation.</span></li>
       <li><em>Next</em><b>Per-round leaderboard</b><span>Shared board per Squeekchain round, with replay-based verification. Because a course is a pure function of <var>n</var>, inputs can be re-simulated to validate a score.</span></li>
       <li><em>At mainnet</em><b>Optional signed scores</b><span>Opt-in signed submissions bound to an address, only once Squeekchain mainnet parameters are final. Read-only mode stays the default.</span></li>
     </ul>
