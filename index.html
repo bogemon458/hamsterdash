@@ -194,7 +194,10 @@
   .mi h3 { font-size:19px; } .mi .pb { height:10px; margin-top:8px; background:#00000077; box-shadow:0 0 0 2px var(--ink); }
   .mi .pb u { display:block; height:100%; background:repeating-linear-gradient(90deg, var(--gold) 0 8px, #ffeaa0 8px 10px); }
   .mi .pn { font-size:13px; color:var(--dim); margin-top:6px; }
-  .mi .rw { font-size:20px; font-weight:700; color:var(--gold); white-space:nowrap; } .mi.done .rw { color:var(--sq); }
+  .mi .rw { font-size:20px; font-weight:700; color:var(--gold); white-space:nowrap; display:flex; flex-direction:column; align-items:flex-end; gap:6px; } .mi.done .rw { color:var(--sq); }
+  .mi .tier { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--dim); } .mi .swap { font-size:12px; padding:4px 10px 6px; }
+  .mi.wk { background:#2a2214; box-shadow:0 -3px 0 0 var(--gold), 0 3px 0 0 var(--gold), -3px 0 0 0 var(--gold), 3px 0 0 0 var(--gold), inset 0 3px 0 0 #ffffff12; margin-top:8px; }
+  .mi.wk .ix { background:var(--gold); color:var(--ink); } .mi.wk .tier { color:var(--gold); }
   .life { width:100%; max-width:1000px; display:grid; grid-template-columns:repeat(5, 1fr); gap:12px; }
   @media (max-width:700px) { .life { grid-template-columns:repeat(2, 1fr); } }
   .life div { padding:12px 14px; } .life b { display:block; font-size:24px; } .life span { font-size:12px; color:var(--dim); }
@@ -286,7 +289,7 @@
   <div class="grid3" id="shopgrid"></div>
 </div>
 <div id="missions" class="page" hidden role="dialog" aria-modal="true" aria-labelledby="mist">
-  <div class="hd"><div><h2 id="mist">Daily Missions</h2><p id="misreset">Three new missions every day (UTC). Rewards go straight to your seed bank.</p></div><button class="btn sm ghost x" type="button">Done</button></div>
+  <div class="hd"><div><h2 id="mist">Missions</h2><p id="misreset">Three new missions every day (UTC). Rewards go straight to your seed bank.</p></div><button class="btn sm ghost x" type="button">Done</button></div>
   <div class="mlist" id="mlist"></div>
   <div class="sect">Your record</div>
   <div class="life" id="life"></div>
@@ -933,41 +936,80 @@
   }
   function saveBank() { store.set('hd_bank', Math.round(bank)); }
   let life = { runs: 0, seeds: 0, stomps: 0, m: 0, golds: 0 }; try { Object.assign(life, JSON.parse(store.get('hd_life') || '{}')); } catch (e) {}
+  // daily missions: 3 of 20 templates (easy / medium / hard), the same for everyone on a UTC day; plus one weekly challenge
+  const AREAS = ['', 'Sunny Meadow', 'Sunset Hills', 'Night Forest'];
   const MIS = [
-    { id: 'seeds', txt: n => `Collect ${n} seeds in one run`, ns: [40, 70, 110], best: 1, stat: 'seeds' },
-    { id: 'dist', txt: n => `Run ${n} m in one run`, ns: [300, 500, 800], best: 1, stat: 'm' },
-    { id: 'stomp', txt: n => `Stomp ${n} eagles or bats`, ns: [3, 6, 10], stat: 'stomps' },
-    { id: 'gold', txt: n => `Grab ${n} golden seeds`, ns: [2, 3, 5], stat: 'golds' },
-    { id: 'cp', txt: n => `Pass ${n} checkpoints`, ns: [3, 5, 8], stat: 'cps' },
-    { id: 'combo', txt: n => `Land a x${n} stomp combo`, ns: [2, 3, 4], best: 1, stat: 'combo' },
-    { id: 'blocks', txt: n => `Mine ${n} Squeek blocks`, ns: [4, 8, 12], stat: 'blocks' },
-    { id: 'runs', txt: n => `Finish ${n} runs`, ns: [3, 5, 8], stat: 'runs' },
+    { id: 'seeds', txt: n => `Collect ${n} seeds in one run`, ns: [40, 70, 110], best: 1, val: r => r.seeds },
+    { id: 'dist', txt: n => `Run ${n} m in one run`, ns: [300, 500, 800], best: 1, val: r => r.m },
+    { id: 'score', txt: n => `Score ${n.toLocaleString('en')} points in one run`, ns: [600, 1200, 2000], best: 1, val: r => r.score },
+    { id: 'stomp', txt: n => `Stomp ${n} eagles or bats`, ns: [3, 6, 10], val: r => r.stomps },
+    { id: 'eagle', txt: n => `Stomp ${n} eagles`, ns: [2, 4, 6], val: r => r.eagles },
+    { id: 'bat', txt: n => `Stomp ${n} bats`, ns: [2, 4, 6], val: r => r.bats },
+    { id: 'combo', txt: n => `Land a x${n} stomp combo`, ns: [2, 3, 4], best: 1, val: r => r.combo },
+    { id: 'gold', txt: n => `Grab ${n} golden seeds`, ns: [2, 3, 5], val: r => r.golds },
+    { id: 'save', txt: n => n > 1 ? `Let a shield save you ${n} times` : 'Let a shield save you once', ns: [1, 2, 3], val: r => r.saves },
+    { id: 'cp', txt: n => `Pass ${n} checkpoints`, ns: [3, 5, 8], val: r => r.cps },
+    { id: 'blocks', txt: n => `Mine ${n} Squeek blocks`, ns: [4, 8, 12], val: r => r.blocks },
+    { id: 'runs', txt: n => `Finish ${n} runs`, ns: [3, 5, 8], val: r => r.runs },
+    { id: 'hops', txt: n => `Hop ${n} times`, ns: [60, 120, 200], val: r => r.hops },
+    { id: 'dbl', txt: n => `Double hop ${n} times`, ns: [15, 30, 50], val: r => r.dbl },
+    { id: 'duck', txt: n => `Duck under ${n} flyers`, ns: [3, 6, 10], val: r => r.ducked },
+    { id: 'arc', txt: n => `Grab every seed of ${n} seed arcs`, ns: [2, 4, 6], val: r => r.arcs },
+    { id: 'streak', txt: n => `Grab ${n} seeds in a row without missing one`, ns: [15, 30, 50], best: 1, val: r => r.streak },
+    { id: 'nodbl', txt: n => `Reach ${n} m without a double hop`, ns: [100, 200, 300], best: 1, val: r => r.nodbl },
+    { id: 'area', txt: n => `Reach ${AREAS[n]} in one run`, ns: [1, 2, 3], best: 1, val: r => r.area, unit: n => `${n} area${n > 1 ? 's' : ''}` },
+    { id: 'char', txt: (n, q) => `Run ${n} m as ${(CHARS.find(c => c.id === q.c) || CHARS[0]).name}`, ns: [150, 300, 500], best: 1, val: (r, q) => CH.id === q.c ? r.m : 0, char: 1 },
   ];
-  const REWARD = [40, 70, 110];
+  const WEEK = [
+    { txt: n => `Collect ${n} seeds this week`, n: 600, val: r => r.seeds },
+    { txt: n => `Run ${n.toLocaleString('en')} m this week`, n: 5000, val: r => r.m },
+    { txt: n => `Stomp ${n} flyers this week`, n: 40, val: r => r.stomps },
+    { txt: n => `Pass ${n} checkpoints this week`, n: 30, val: r => r.cps },
+    { txt: n => `Finish ${n} runs this week`, n: 25, val: r => r.runs },
+    { txt: n => `Mine ${n} Squeek blocks this week`, n: 60, val: r => r.blocks },
+  ];
+  const REWARD = [40, 70, 110], WEEK_REWARD = 300;
   const utcDay = () => new Date().toISOString().slice(0, 10);
+  const weekNo = () => Math.floor((Date.now() / 86400000 + 3) / 7); // weeks start Monday 00:00 UTC
+  const misText = q => q.w ? WEEK[q.i].txt(q.n) : MIS[q.i].txt(q.n, q);
   let mis = null;
+  function pickMission(r, k, taken) {
+    const pool = MIS.map((m, i) => i).filter(i => !taken.includes(i)), i = pool[r() * pool.length | 0], q = { i, n: MIS[i].ns[k], reward: REWARD[k] };
+    if (MIS[i].char) q.c = CHARS[r() * 5 | 0].id;
+    return q;
+  }
   function loadMissions() {
-    const day = utcDay(); try { mis = JSON.parse(store.get('hd_mis') || 'null'); } catch (e) { mis = null; }
-    if (!mis || mis.day !== day) {
-      const r = mulberry32(hashStr('hamsterdash/missions/' + day)), pool = MIS.map((m, i) => i), list = [];
-      for (let k = 0; k < 3; k++) { const j = pool.splice(r() * pool.length | 0, 1)[0]; list.push({ i: j, n: MIS[j].ns[k], reward: REWARD[k] }); }
-      mis = { day, list, prog: [0, 0, 0], done: [false, false, false] }; saveMissions();
+    const day = utcDay(), wk = weekNo(); try { mis = JSON.parse(store.get('hd_mis') || 'null'); } catch (e) { mis = null; }
+    if (!mis || mis.v !== 2 || mis.day !== day) {
+      const r = mulberry32(hashStr('hamsterdash/missions/' + day)), list = [];
+      for (let k = 0; k < 3; k++) list.push(pickMission(r, k, list.map(q => q.i)));
+      mis = { v: 2, day, list, prog: [0, 0, 0], done: [false, false, false], rr: 1, week: mis && mis.week };
     }
+    if (!mis.week || mis.week.wk !== wk) { const i = mulberry32(hashStr('hamsterdash/week/' + wk))() * WEEK.length | 0; mis.week = { wk, i, n: WEEK[i].n, reward: WEEK_REWARD, w: 1, prog: 0, done: false }; }
+    saveMissions();
   }
   function saveMissions() { store.set('hd_mis', JSON.stringify(mis)); }
   loadMissions();
-  let run = null, misBase = [0, 0, 0], runDone = [];
-  function newRunStats() { run = { seeds: 0, m: 0, stomps: 0, golds: 0, cps: 0, combo: 0, blocks: 0, runs: 0 }; misBase = mis.prog.slice(); runDone = []; }
+  let run = null, misBase = [0, 0, 0], weekBase = 0, runDone = [], arcId = 0;
+  function newRunStats() {
+    run = { seeds: 0, m: 0, score: 0, stomps: 0, eagles: 0, bats: 0, golds: 0, saves: 0, cps: 0, combo: 0, blocks: 0, runs: 0, hops: 0, dbl: 0, usedDbl: false,
+      ducked: 0, arcs: 0, arcGot: {}, st: 0, streak: 0, nodbl: 0, area: 0 };
+    misBase = mis.prog.slice(); weekBase = mis.week.prog; runDone = [];
+  }
+  function complete(q) {
+    bank += q.reward; saveBank(); renderBank(); runDone.push({ txt: misText(q), reward: q.reward });
+    banner = { text: `${q.w ? 'Weekly' : 'Mission'} done +${q.reward}`, life: 2, col: '#ffd54a' }; sfx.mission();
+  }
   function misTick() {
     if (!run || state === 'demo') return;
+    run.score = score();
     mis.list.forEach((q, k) => {
-      const def = MIS[q.i], v = def.best ? Math.max(misBase[k], run[def.stat]) : misBase[k] + run[def.stat];
+      const def = MIS[q.i], x = def.val(run, q) || 0, v = def.best ? Math.max(misBase[k], x) : misBase[k] + x;
       mis.prog[k] = Math.min(q.n, v);
-      if (!mis.done[k] && v >= q.n) {
-        mis.done[k] = true; bank += q.reward; saveBank(); renderBank(); runDone.push(q);
-        banner = { text: `Mission done +${q.reward}`, life: 2, col: '#ffd54a' }; sfx.mission();
-      }
+      if (!mis.done[k] && v >= q.n) { mis.done[k] = true; complete(q); }
     });
+    const w = mis.week, v = weekBase + (WEEK[w.i].val(run) || 0); w.prog = Math.min(w.n, v);
+    if (!w.done && v >= w.n) { w.done = true; complete(w); }
   }
 
   // ---------- game state ----------
@@ -1036,6 +1078,7 @@
       ham.jumps = second ? 2 : 1;
       ham.squash = 0.7; bufferT = 0;
       second ? sfx.hop2() : sfx.hop();
+      if (run && state === 'play') { run.hops++; if (second) { run.dbl++; run.usedDbl = true; } misTick(); }
       puff(ham.x, ham.y, second ? 8 : 5, second ? '#ffe08a' : '#c9a27a');
     }
   }
@@ -1083,16 +1126,24 @@
   function renderMissions() {
     loadMissions();
     const h = Math.floor(msLeft() / 3600000), m = Math.floor(msLeft() / 60000) % 60;
-    $('misreset').textContent = `Three new missions every day. Rewards go straight to your seed bank. New set in ${h}h ${m}m.`;
-    $('mlist').innerHTML = mis.list.map((q, k) => { const done = mis.done[k], p = mis.prog[k];
-      return `<div class="mi panel${done ? ' done' : ''}"><span class="ix">${done ? '✓' : k + 1}</span><div><h3>${MIS[q.i].txt(q.n)}</h3><div class="pb"><u style="width:${Math.round(p / q.n * 100)}%"></u></div><div class="pn">${p} / ${q.n}</div></div>` +
-        `<span class="rw">${done ? 'Done' : `<i class="seedi"></i>+${q.reward}`}</span></div>`; }).join('');
+    const wl = (weekNo() + 1) * 7 - 3, wd = Math.max(0, (wl * 86400000 - Date.now()) / 86400000), TIER = ['Easy', 'Medium', 'Hard'];
+    $('misreset').textContent = `Three new missions every day, the same for every player. New set in ${h}h ${m}m.` + (mis.rr ? ' You can swap one mission today.' : '');
+    const card = (q, k, done, p) => { const def = q.w ? null : MIS[q.i], unit = def && def.unit ? def.unit : x => x;
+      return `<div class="mi panel${done ? ' done' : ''}${q.w ? ' wk' : ''}"><span class="ix">${done ? '✓' : q.w ? 'W' : k + 1}</span><div><small class="tier">${q.w ? `Weekly challenge · ${Math.floor(wd)}d ${Math.floor(wd % 1 * 24)}h left` : TIER[k]}</small><h3>${misText(q)}</h3>` +
+        `<div class="pb"><u style="width:${Math.round(p / q.n * 100)}%"></u></div><div class="pn">${unit(p)} / ${unit(q.n)}</div></div>` +
+        `<span class="rw"><span>${done ? 'Done' : `<i class="seedi"></i>+${q.reward}`}</span>${!done && !q.w && mis.rr ? `<button class="btn sm ghost swap" type="button" data-swap="${k}">Swap</button>` : ''}</span></div>`; };
+    $('mlist').innerHTML = mis.list.map((q, k) => card(q, k, mis.done[k], mis.prog[k])).join('') + card(mis.week, 3, mis.week.done, mis.week.prog);
     $('life').innerHTML = [['Runs', life.runs], ['Best score', best], ['Seeds collected', life.seeds], ['Stomps', life.stomps], ['Metres run', life.m]]
       .map(([k, v]) => `<div class="panel"><b>${(+v || 0).toLocaleString('en')}</b><span>${k}</span></div>`).join('');
   }
+  $('mlist').addEventListener('click', e => {
+    const b = e.target.closest('[data-swap]'); if (!b || !mis.rr || state === 'play') return; e.stopPropagation();
+    const k = +b.dataset.swap; if (mis.done[k]) return;
+    mis.list[k] = pickMission(Math.random, k, mis.list.map(q => q.i)); mis.prog[k] = 0; mis.rr = 0; saveMissions(); sfx.buy(); renderMissions();
+  });
   function renderBank() {
     $('bank').textContent = Math.round(bank).toLocaleString('en');
-    const open = mis.done.filter(d => !d).length, bd = $('misbadge'); bd.hidden = !open; bd.textContent = open;
+    const open = mis.done.filter(d => !d).length + (mis.week.done ? 0 : 1), bd = $('misbadge'); bd.hidden = !open; bd.textContent = open;
   }
   function openPage(name) {
     closePages(true); const p = PAGES[name]; if (!p) return;
@@ -1223,9 +1274,9 @@
     } else obstacles.push(make(kind, W + 40));
     if (rng() < 0.35) { // a seed arc traces the hop over the obstacle
       const first = obstacles[obstacles.length - (kind === 'pair' ? 2 : 1)], last = obstacles[obstacles.length - 1];
-      const cx = (first.x + last.x + last.w) / 2, half = speed * airtime() / 2, peak = JUMP * JUMP / (2 * G) * S;
+      const cx = (first.x + last.x + last.w) / 2, half = speed * airtime() / 2, peak = JUMP * JUMP / (2 * G) * S, arcKey = ++arcId;
       for (let i = 0; i < 5; i++) { const u = -0.6 + i * 0.3;
-        pickups.push({ x: cx + u * half, y: GROUND - ham.r * S * 0.9 - peak * (1 - u * u) * 0.92, gold: false, got: false, arc: true }); }
+        pickups.push({ x: cx + u * half, y: GROUND - ham.r * S * 0.9 - peak * (1 - u * u) * 0.92, gold: false, got: false, arc: arcKey }); }
     }
     nextObstacleAt = dist + minGap + rng() * Math.max(120, 520 - d * 300) * S;
   }
@@ -1259,11 +1310,11 @@
     sfx.stomp(); shake = 0.12;
     puff(fx, fy, 12, o.sp === 'eagle' ? '#7a4520' : '#4a3663'); puff(fx, fy, 6, '#f7f3ea');
     popup(fx, fy - 26 * S, combo > 1 ? `+${pts} x${combo}` : `+${pts}`, '#ff9a5a');
-    if (run) { run.stomps++; run.combo = Math.max(run.combo, combo); misTick(); }
+    if (run) { run.stomps++; run[o.sp === 'eagle' ? 'eagles' : 'bats']++; run.combo = Math.max(run.combo, combo); misTick(); }
   }
   function hit() {
     if (shield) {
-      shield = false; sfx.shield(); shake = 0.15; flash = 0.15; invuln = 0.35;
+      shield = false; sfx.shield(); shake = 0.15; flash = 0.15; invuln = 0.35; if (run && state === 'play') { run.saves++; misTick(); }
       puff(ham.x, ham.y - ham.r * S, 14, '#4fe0bd'); popup(ham.x, ham.y - ham.r * S * 2.6, 'Shield!', '#4fe0bd');
       return false;
     }
@@ -1319,14 +1370,14 @@
     if (dist >= nextObstacleAt) spawnObstacle();
     if (dist >= nextSeedsAt) spawnSeeds();
     const bi = biomeAt(dist).cur;
-    if (bi !== lastBiome) { lastBiome = bi; if (state === 'play') { banner = { text: BIOMES[bi].name, life: 2 }; sfx.mile(); } }
+    if (bi !== lastBiome) { lastBiome = bi; if (state === 'play') { banner = { text: BIOMES[bi].name, life: 2 }; sfx.mile(); if (run) { run.area++; misTick(); } } }
     if (dist / 100 >= nextMile) {
       if (!banner && state === 'play') banner = { text: nextMile + ' m', life: 1.2 }; sfx.mile();
       nextMile += nextMile < 500 ? 100 : 250;
     }
     if (state === 'play') {
       if (dist >= nextCp) checkpoint();
-      const m = Math.floor(dist / 100); if (run && m !== run.m) { run.m = m; if (m % 10 === 0) misTick(); }
+      const m = Math.floor(dist / 100); if (run && m !== run.m) { run.m = m; if (!run.usedDbl) run.nodbl = m; if (m % 10 === 0) misTick(); }
     }
 
     const dx = speed * dt;
@@ -1334,6 +1385,7 @@
     for (const p of pickups) p.x -= dx;
     for (const f of flies) { f.x -= dx * 0.6; if (f.x < -10) f.x += W + 20; }
     obstacles = obstacles.filter(o => o.x + o.w > -60 && !o.dead);
+    if (run && state === 'play') for (const p of pickups) if (!p.got && !p.gold && p.x <= -50) run.st = 0;
     pickups = pickups.filter(p => p.x > -50 && !p.got);
 
     const hx = ham.x, hy = ham.y - r * (ducking ? 0.5 : 0.9), hr = r * (ducking ? 0.5 : 0.62);
@@ -1343,6 +1395,7 @@
         const fx = o.x + o.w / 2, fy = o.y + Math.sin(t * 3 + o.phase) * 5 * S, fr = 15 * S + hr;
         if (ham.vy > 0 && ham.y < fy + 6 * S && Math.abs(hx - fx) < o.w / 2 + hr && (hx - fx) ** 2 + (hy - fy) ** 2 < (fr + 14 * S) ** 2) { stomp(o, fx, fy); continue; }
         if (invuln <= 0 && (hx - fx) ** 2 + (hy - fy) ** 2 < fr * fr) { o.dead = true; if (hit()) return; }
+        if (run && state === 'play' && !o.dk && ducking && ham.jumps === 0 && o.alt !== 'high' && Math.abs(hx - fx) < 12 * S) { o.dk = 1; run.ducked++; misTick(); }
         continue;
       }
       if (invuln > 0) continue;
@@ -1357,7 +1410,8 @@
         else {
           const v = wheelOn() ? 2 : 1; seeds += v; sfx.seed();
           popup(p.x, p.y - 10, '+' + v * 10, v > 1 ? '#4fe0bd' : '#ffe08a'); puff(p.x, p.y, 4, '#ffe08a');
-          if (state === 'play') { addWork(v); if (run) { run.seeds = seeds; misTick(); } }
+          if (state === 'play') { addWork(v); if (run) { run.seeds = seeds; run.st++; run.streak = Math.max(run.streak, run.st);
+            if (p.arc && (run.arcGot[p.arc] = (run.arcGot[p.arc] || 0) + 1) === 5) run.arcs++; misTick(); } }
         }
       }
     }
@@ -1424,7 +1478,7 @@
         (lost ? `<span>Lost before a checkpoint</span><b class="lost">${kfmt(lost)}</b>` : '') +
         `<span>Dash stake · power</span><b>${kfmt(stake)} · ${kfmt(dashPower())}</b></div>` +
         '<div class="lbres" id="lbres"></div>' +
-        (doneNow.length ? `<div class="mdone">Missions done: ${doneNow.map(q => `${MIS[q.i].txt(q.n)} (+${q.reward})`).join(' · ')}</div>` : '') +
+        (doneNow.length ? `<div class="mdone">Missions done: ${doneNow.map(q => `${q.txt} (+${q.reward})`).join(' · ')}</div>` : '') +
         (wheelSeen ? `<div class="race">The real hamster ran <b>${realM.toFixed(1)} m</b> on its wheel during your run.</div>` : '') +
         '<div class="fine">SQK here is simulated with Squeekchain\'s real issuance and staking rules. It is not a real token.</div>';
       $result.hidden = false; $ov.classList.add('results');

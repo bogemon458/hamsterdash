@@ -31,7 +31,8 @@ Full write-up: [hamsterdash.site/whitepaper](https://hamsterdash.site/whitepaper
 ## Progression
 - **Seed bank.** Every seed from a run is banked when the run ends.
 - **Seed Shop.** Six permanent upgrades: Magnet Cheeks (seed reach), Spring Paws (hop height), Lucky Husk (golden seeds), Stomp Boots (stomp points), Seed Pouch (more seeds banked) and Second Wind (survive one fatal hit per run).
-- **Daily missions.** Three missions a day, the same for every player (seeded by the UTC date), worth 40 / 70 / 110 seeds.
+- **Daily missions.** Three missions a day from 20 templates (seeds, streaks, seed arcs, hops, ducking, no-double-hop runs, areas, stomps, eagles, bats, combos, shield saves, checkpoints, blocks, score, a run as a named hamster), the same for every player (seeded by the UTC date), worth 40 / 70 / 110 seeds. One free swap per day.
+- **Weekly challenge.** One bigger goal per week, summed over all your runs, worth 300 seeds.
 - **Your record.** Lifetime runs, best score, seeds, stomps and metres.
 
 Upgrades change your tools, never the course: obstacles and seeds still come only from the round seed.
