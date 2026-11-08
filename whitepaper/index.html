@@ -516,7 +516,8 @@
   <section id="limits">
     <h2><span class="n">9</span>Limitations</h2>
     <ul>
-      <li><b>Local state only.</b> Scores, round bests, the Dash stake, the seed bank, upgrades and mission progress live in one browser. Clearing site data resets them.</li>
+      <li><b>Mostly local state.</b> Round bests, the Dash stake, the seed bank, upgrades and mission progress live in one browser. Clearing site data resets them. Only leaderboard entries (name, score, run stats) are stored on the server.</li>
+      <li><b>Plausibility, not proof.</b> Leaderboard checks reject impossible scores but cannot prove a plausible one was played honestly; replay verification is planned.</li>
       <li><b>Upgrades affect scores.</b> The course is identical for everyone, but upgraded players have better tools. A shared leaderboard would need to show upgrade levels or keep a separate unupgraded board.</li>
       <li><b>Testnet parameters.</b> Squeekchain currently runs on Sepolia, and difficulty, issuance start and contract addresses may change at mainnet. The game reads what it can live, and §6 constants will be revised if the published rules change.</li>
       <li><b>Model, not a mirror.</b> The economy follows the chain's formulas but runs at game speed. One run can complete many blocks, far more than one player's share of real wheel work.</li>
@@ -531,7 +532,8 @@
       <li class="done"><em>v1.1 · Nov 2026</em><b>Economy model</b><span>Work at live difficulty, real issuance schedule, checkpoints, Dash stake, Squeek power boost, this whitepaper.</span></li>
       <li class="done"><em>v1.2 · Nov 2026</em><b>Gameplay and presentation</b><span>Six playable hamsters, stomps with combos, hazard-safe seed placement and seed arcs, painted parallax worlds with smooth area transitions.</span></li>
       <li class="done"><em>v1.3 · Nov 2026</em><b>Pixel art and progression</b><span>Full pixel-art renderer (procedural sprites, dithered backdrops, hex-lattice shield), seed bank and Seed Shop, daily missions, lifetime record, chiptune soundtrack, new menu and navigation.</span></li>
-      <li><em>Next</em><b>Per-round leaderboard</b><span>Shared board per Squeekchain round, with replay-based verification. Because a course is a pure function of <var>n</var>, inputs can be re-simulated to validate a score.</span></li>
+      <li class="done"><em>v1.4 · Nov 2026</em><b>Global leaderboard</b><span>Boards for the current round, today and all time (best per player), served by a Cloudflare Worker with D1 at api.hamsterdash.site. Runs get a server-timestamped ticket; a score is ranked only if it equals its parts and the run lasted at least as long as the speed curve allows for its distance. Names and scores only; IPs are stored hashed for rate limiting.</span></li>
+      <li><em>Next</em><b>Replay verification</b><span>Because a course is a pure function of <var>n</var>, recorded inputs can be re-simulated on the server to prove a score exactly.</span></li>
       <li><em>At mainnet</em><b>Optional signed scores</b><span>Opt-in signed submissions bound to an address, only once Squeekchain mainnet parameters are final. Read-only mode stays the default.</span></li>
     </ul>
   </section>

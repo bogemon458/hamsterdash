@@ -36,6 +36,9 @@ Full write-up: [hamsterdash.site/whitepaper](https://hamsterdash.site/whitepaper
 
 Upgrades change your tools, never the course: obstacles and seeds still come only from the round seed.
 
+## Leaderboard
+Global boards for **this round**, **today** and **all time** (best score per player), served by a Cloudflare Worker + D1 at `api.hamsterdash.site` (source in [`worker/`](worker/)). Each run gets a server-timestamped ticket; a score is ranked only if it equals its parts and the run lasted at least as long as the game's speed curve allows for the distance. Only a nickname and run stats are stored; IPs are hashed for rate limiting.
+
 ## Characters
 Pick one of six hamsters in the menu. Each trades one strength for one weakness; the course is the same for everyone.
 

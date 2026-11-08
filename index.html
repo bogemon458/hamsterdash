@@ -199,6 +199,22 @@
   @media (max-width:700px) { .life { grid-template-columns:repeat(2, 1fr); } }
   .life div { padding:12px 14px; } .life b { display:block; font-size:24px; } .life span { font-size:12px; color:var(--dim); }
   .sect { width:100%; max-width:1000px; font-size:14px; letter-spacing:3px; text-transform:uppercase; color:var(--sq); margin-top:6px; }
+  .tabs { width:100%; max-width:1000px; display:flex; gap:10px; }
+  .tabs button { font:inherit; font-size:15px; font-weight:700; text-transform:uppercase; letter-spacing:1px; padding:8px 16px; border:0; cursor:pointer; color:var(--dim); background:var(--panel);
+    box-shadow:0 -3px 0 0 var(--ink), 0 3px 0 0 var(--ink), -3px 0 0 0 var(--ink), 3px 0 0 0 var(--ink); margin:3px; }
+  .tabs button.on { color:#2b1406; background:var(--accent); box-shadow:0 -3px 0 0 var(--ink), 0 3px 0 0 var(--ink), -3px 0 0 0 var(--ink), 3px 0 0 0 var(--ink), inset 0 -4px 0 0 var(--accent-d); }
+  .lb { width:100%; max-width:1000px; padding:6px 0; min-height:120px; }
+  .lb .row { display:grid; grid-template-columns:52px 44px 1fr auto auto; gap:14px; align-items:center; padding:7px 18px; font-size:17px; }
+  .lb .row:nth-child(odd) { background:#ffffff06; } .lb .row.me { background:#ffb43c22; box-shadow:inset 3px 0 0 var(--accent); }
+  .lb .rk { font-weight:700; color:var(--dim); } .lb .row:nth-child(1) .rk { color:var(--gold); } .lb .row:nth-child(2) .rk { color:#d8dde8; } .lb .row:nth-child(3) .rk { color:#e0955a; }
+  .lb img { width:44px; height:34px; } .lb .nm { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .lb .nm small { color:var(--sq); font-size:12px; margin-left:6px; }
+  .lb .sc { font-weight:700; font-size:20px; text-align:right; } .lb .ds { color:var(--dim); font-size:13px; text-align:right; min-width:64px; }
+  .lb .empty { padding:30px 18px; color:var(--dim); text-align:center; }
+  @media (max-width:520px) { .lb .row { grid-template-columns:34px 44px 1fr auto; gap:8px; padding:7px 10px; } .lb .ds { display:none; } }
+  .lbname { width:100%; max-width:1000px; display:flex; flex-wrap:wrap; align-items:center; gap:10px; font-size:14px; color:var(--dim); }
+  .lbname input, #result input { font:inherit; font-size:15px; padding:8px 10px; border:0; background:var(--ink); color:var(--fg); user-select:text; box-shadow:inset 0 0 0 2px #ffb43c66; width:200px; }
+  #result .lbres { margin-top:10px; font-size:14px; padding:8px 10px; background:#ffb43c14; box-shadow:inset 0 0 0 2px #ffb43c55; color:#ffe0a8; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  #result .lbres b { color:#fff; }
   #duck { display:none; position:fixed; left:18px; bottom:22px; z-index:6; width:76px; height:76px; padding:0; font-size:34px; line-height:1; touch-action:none; }
   @media (pointer: coarse) { body.playing #duck { display:block; } }
   footer { position:fixed; bottom:8px; width:100%; text-align:center; font-size:12px; opacity:.6; pointer-events:none; }
@@ -213,6 +229,7 @@
     <button class="nb" type="button" data-open="select">Hamsters</button>
     <button class="nb" type="button" data-open="shop">Seed Shop</button>
     <button class="nb" type="button" data-open="missions">Missions<span class="badge" id="misbadge" hidden></span></button>
+    <button class="nb" type="button" data-open="board">Leaderboard</button>
     <a class="nb" href="whitepaper/">Whitepaper</a>
   </div>
   <div class="rt">
@@ -273,6 +290,12 @@
   <div class="mlist" id="mlist"></div>
   <div class="sect">Your record</div>
   <div class="life" id="life"></div>
+</div>
+<div id="board" class="page" hidden role="dialog" aria-modal="true" aria-labelledby="lbt">
+  <div class="hd"><div><h2 id="lbt">Leaderboard</h2><p id="lbsub">Everyone in a Squeekchain round runs the same course. Best score per player.</p></div><button class="btn sm ghost x" type="button">Done</button></div>
+  <div class="tabs" id="lbtabs"><button type="button" data-b="round" class="on">This round</button><button type="button" data-b="today">Today</button><button type="button" data-b="all">All time</button></div>
+  <div class="lb panel" id="lbrows"></div>
+  <form class="lbname" id="lbname"><label for="nick">Your name on the board</label><input id="nick" maxlength="16" autocomplete="off" spellcheck="false" placeholder="2–16 letters or numbers"><button class="btn sm" type="submit">Save</button><span id="nickmsg"></span></form>
 </div>
 <button id="duck" class="btn" aria-label="Duck">&#11015;</button>
 <footer>Built for <a href="https://squeekchain.com" target="_blank" rel="noopener">Squeekchain</a></footer>
@@ -1019,7 +1042,7 @@
 
   // ---------- pages: hamsters, shop, missions ----------
   const $charbtn = $('charbtn'), $select = $('select'), $grid6 = $('grid6'), $shop = $('shop'), $shopgrid = $('shopgrid'), $missions = $('missions');
-  const PAGES = { select: $select, shop: $shop, missions: $missions };
+  const PAGES = { select: $select, shop: $shop, missions: $missions, board: $('board') };
   const STRONG = { pip: ['Balanced', 'No weakness'], mochi: ['Held hops reach 24% higher', 'Double hop 12% weaker'],
     biscuit: ['Grabs seeds from 40% further', 'Hops 10% lower'], nova: ['Starts every run shielded', 'Golden seeds half as common'],
     ziggy: ['75 per stomp, bigger bounce', 'Fast fall 50% weaker'], squeek: ['Teal LED skin (cosmetic)', 'Needs a Squeek in the checked wallet'] };
@@ -1073,7 +1096,7 @@
   }
   function openPage(name) {
     closePages(true); const p = PAGES[name]; if (!p) return;
-    if (name === 'select') renderRoster(); if (name === 'shop') renderShop(); if (name === 'missions') renderMissions();
+    if (name === 'select') renderRoster(); if (name === 'shop') renderShop(); if (name === 'missions') renderMissions(); if (name === 'board') renderBoard();
     p.hidden = false; const f = name === 'select' ? ($grid6.querySelector('.on') || $grid6.firstChild) : p.querySelector('.x'); f && f.focus();
   }
   function closePages(quiet) { for (const p of Object.values(PAGES)) p.hidden = true; if (!quiet) $charbtn.blur(); }
@@ -1088,9 +1111,57 @@
   for (const el of [$charbtn, $('nav')]) el.addEventListener('pointerdown', e => e.stopPropagation());
   renderRoster(); renderBank();
 
+  // ---------- global leaderboard (Cloudflare Worker + D1, see /worker) ----------
+  const API = 'https://api.hamsterdash.site';
+  let pid = store.get('hd_pid'); if (!pid) { pid = (crypto.randomUUID ? crypto.randomUUID() : 'p' + Math.random().toString(36).slice(2) + Date.now().toString(36)).toLowerCase(); store.set('hd_pid', pid); }
+  let nick = store.get('hd_name') || '';
+  const NICK_RE = /^[A-Za-z0-9_.\- ]{2,16}$/;
+  let ticket = null, lbBoard = 'round';
+  const CHARURL = {}; const charURL = id => CHARURL[id] || (CHARURL[id] = (() => { const c = CHARS.find(x => x.id === id) || CHARS[0], cv2 = makeCanvas(HF.w, HF.h); cv2.getContext('2d').drawImage(hamFrames(c).run[1], 0, 0); return cv2.toDataURL(); })());
+  async function api(path, body) {
+    const r = await fetch(API + path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : { cache: 'no-store' });
+    const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || r.status); return j;
+  }
+  function getTicket() { ticket = api('/start', { round: courseRound }).then(j => j.id).catch(() => null); }
+  function upgLevels() { return SHOP.reduce((a, it) => a + L(it.id), 0); }
+  async function submitRun(p) {
+    const id = await p.ticket; if (!id) throw new Error('offline');
+    return api('/submit', { id, pid, name: nick, char: p.char, score: p.score, seeds: p.seeds, dist: Math.floor(p.dist), stomps: p.stomps, bonus: p.bonus, upg: p.upg });
+  }
+  function rankLine(j) { return `Rank <b>#${j.rank.round}</b> this round · <b>#${j.rank.today}</b> today · <b>#${j.rank.all}</b> all time`; }
+  function showSubmit(el, p) { // results card: submit now, or ask for a name first
+    if (!NICK_RE.test(nick)) {
+      el.innerHTML = `<span>Put this run on the leaderboard:</span><input maxlength="16" placeholder="Your name" spellcheck="false"><button class="btn sm" type="button">Submit</button>`;
+      const inp = el.querySelector('input'), go = () => { const v = inp.value.trim(); if (!NICK_RE.test(v)) { inp.focus(); return; } nick = v; store.set('hd_name', v); showSubmit(el, p); };
+      el.querySelector('button').addEventListener('click', e => { e.stopPropagation(); go(); });
+      inp.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') go(); });
+      for (const x of [inp, el]) x.addEventListener('pointerdown', e => e.stopPropagation());
+      return;
+    }
+    el.textContent = 'Submitting to the leaderboard…';
+    submitRun(p).then(j => { el.innerHTML = rankLine(j); }).catch(e => { el.textContent = e.message === 'rejected' ? 'This run could not be verified, so it was not ranked.' : 'Leaderboard offline: run not submitted.'; });
+  }
+  async function renderBoard() {
+    const rows = $('lbrows'); rows.innerHTML = '<div class="empty">Loading…</div>';
+    document.querySelectorAll('#lbtabs button').forEach(b => b.classList.toggle('on', b.dataset.b === lbBoard));
+    $('lbsub').textContent = lbBoard === 'round' ? `Round ${roundNow()}: everyone runs the same course until ${mmss(roundLeft())} from now. Best score per player.`
+      : lbBoard === 'today' ? 'Best score per player since 00:00 UTC.' : 'Best score per player, ever.';
+    $('nick').value = nick;
+    try {
+      const j = await api('/top?board=' + lbBoard + (lbBoard === 'round' ? '&round=' + roundNow() : ''));
+      rows.innerHTML = j.rows.length ? j.rows.map((r, i) => `<div class="row${r.pid === pid ? ' me' : ''}"><span class="rk">#${i + 1}</span><img class="px" src="${charURL(r.char)}" alt="">` +
+        `<span class="nm">${esc(r.name)}${r.upg ? `<small title="Seed Shop levels">+${r.upg} upg</small>` : ''}</span><span class="ds">${r.dist_m} m</span><span class="sc">${(+r.score).toLocaleString('en')}</span></div>`).join('')
+        : `<div class="empty">No scores yet${lbBoard === 'round' ? ' this round' : ''}. Be the first.</div>`;
+    } catch (e) { rows.innerHTML = '<div class="empty">Leaderboard is offline right now.</div>'; }
+  }
+  $('lbtabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; e.stopPropagation(); lbBoard = b.dataset.b; renderBoard(); });
+  $('lbname').addEventListener('submit', e => { e.preventDefault(); const v = $('nick').value.trim();
+    if (NICK_RE.test(v)) { nick = v; store.set('hd_name', v); $('nickmsg').textContent = 'Saved. Your next runs use this name.'; } else $('nickmsg').textContent = '2–16 letters, numbers, spaces, . _ -'; });
+  $('nick').addEventListener('keydown', e => e.stopPropagation());
+
   function start() {
     loadMissions(); newRunStats();
-    $ov.classList.remove('intro', 'results'); $result.hidden = true; audio(); musicSync(); ducking = false; state = 'play'; applyMods(); resize(); reset();
+    $ov.classList.remove('intro', 'results'); $result.hidden = true; audio(); musicSync(); ducking = false; state = 'play'; applyMods(); resize(); reset(); getTicket();
     $ov.classList.add('hidden'); document.body.classList.add('playing'); renderHud(true); renderMine();
   }
   function pause() { if (state !== 'play') return; state = 'paused'; }
@@ -1336,7 +1407,7 @@
     const earned = Math.round(seeds * (1 + 0.1 * L('pouch'))); bank += earned; saveBank();
     life.runs++; life.seeds += seeds; life.stomps += stomps; life.m += Math.floor(dist / 100); life.golds += run.golds; store.set('hd_life', JSON.stringify(life));
     saveMissions(); renderBank();
-    const doneNow = runDone.slice();
+    const doneNow = runDone.slice(), sub = { ticket, char: CH.id, score: s, seeds, dist, stomps, bonus, upg: upgLevels() }; ticket = null;
     setTimeout(() => {
       if (state !== 'over') return;
       const rk = 'hd_round_' + courseRound, rb = Math.max(s, +store.get(rk) || 0); store.set(rk, rb);
@@ -1352,10 +1423,12 @@
         `<span>SQK staked this run</span><b class="sq">${kfmt(banked)}</b>` +
         (lost ? `<span>Lost before a checkpoint</span><b class="lost">${kfmt(lost)}</b>` : '') +
         `<span>Dash stake · power</span><b>${kfmt(stake)} · ${kfmt(dashPower())}</b></div>` +
+        '<div class="lbres" id="lbres"></div>' +
         (doneNow.length ? `<div class="mdone">Missions done: ${doneNow.map(q => `${MIS[q.i].txt(q.n)} (+${q.reward})`).join(' · ')}</div>` : '') +
         (wheelSeen ? `<div class="race">The real hamster ran <b>${realM.toFixed(1)} m</b> on its wheel during your run.</div>` : '') +
         '<div class="fine">SQK here is simulated with Squeekchain\'s real issuance and staking rules. It is not a real token.</div>';
       $result.hidden = false; $ov.classList.add('results');
+      if (s > 0) showSubmit($('lbres'), sub); else $('lbres').remove();
       document.body.classList.remove('playing'); tickClock();
       $play.textContent = 'Again';
       $ov.classList.remove('hidden'); $ov.scrollTop = 0;

@@ -1,0 +1,10 @@
+name = "hamsterdash-api"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+workers_dev = false
+routes = [{ pattern = "api.hamsterdash.site", custom_domain = true }]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "hamsterdash"
+database_id = "da44d9c8-b426-4c74-877a-6bc645bfcb4c"
