@@ -146,7 +146,7 @@
       <span class="chip" id="course">Best this round 0</span>
     </div>
   </main>
-  <div class="hint">Space / tap to hop (hold = higher, again = double hop) · ↓ or S to duck · seeds mine Squeek blocks · reach a checkpoint flag to stake your SQK</div>
+  <div class="hint">Space / tap to hop (hold = higher, again = double hop) · ↓ or S to duck · land on eagles &amp; bats to stomp them · seeds mine Squeek blocks · reach a checkpoint flag to stake your SQK</div>
   <details id="more">
     <summary>Squeekchain stats &amp; Squeek skin</summary>
     <section id="sq" aria-live="polite">
@@ -196,20 +196,250 @@
     { name: 'Sunset Hills', sky: ['#e2725b', '#ffcf8f'], hill: '#a9584a', ground: ['#94553a', '#55301d'], lip: '#c27a52', dash: '#74412a', flyer: 'eagle', sun: 1, clouds: 1 },
     { name: 'Night Forest', sky: ['#0d1430', '#2a3566'], hill: '#18213d', ground: ['#2f3b2a', '#161f14'], lip: '#45593a', dash: '#222d1d', flyer: 'bat',   stars: 1, trees: 1 },
   ];
-  // sky+ground gradients are smooth, so cache them at quarter resolution (tiny memory, no per-frame gradients)
-  let bgLayers = [];
-  function buildBg() {
-    const q = 4, w = Math.max(2, Math.ceil(W / q)), h = Math.max(2, Math.ceil(H / q)), gy = GROUND / q;
-    bgLayers = BIOMES.map(b => {
-      const c = document.createElement('canvas'); c.width = w; c.height = h;
-      const x = c.getContext('2d');
-      const g = x.createLinearGradient(0, 0, 0, gy); g.addColorStop(0, b.sky[0]); g.addColorStop(1, b.sky[1]);
-      x.fillStyle = g; x.fillRect(0, 0, w, gy + 1);
-      const g2 = x.createLinearGradient(0, gy, 0, h); g2.addColorStop(0, b.ground[0]); g2.addColorStop(1, b.ground[1]);
-      x.fillStyle = g2; x.fillRect(0, gy, w, h - gy);
-      return c;
-    });
+  // ---------- painted backdrop: parallax layers pre-rendered once per screen size ----------
+  // Every layer is painted procedurally (no image files) into an offscreen canvas that tiles horizontally:
+  // sky → clouds → far mountains → mid hills with trees → near bushes → ground. Ridges are sums of
+  // integer-frequency sines, so they wrap seamlessly; each column is shaded by its slope (sun from the left),
+  // then hazed toward the horizon colour and grained for a painted look.
+  const PAL = [
+    { cave: 1, sky: ['#120b07', '#24180f', '#3a281b'], far: ['#2e2016', '#4f3a2a'], mid: ['#1d130c', '#3a2a1c'], near: ['#140d08', '#2a1d13'],
+      soil: ['#6b4a2f', '#3a2616'], top: '#7d5838', topLit: '#9a7048', haze: '#3a281b' },
+    { sky: ['#3f86d6', '#8fc6ef', '#e6f4f8'], sun: [0.18, 0.2, '#fffbe6'], cloud: ['#ffffff', '#b9cde0'],
+      far: ['#7d98b6', '#c3d4e6'], snow: 0.7, mid: ['#4f8a3c', '#8cc463'], tree: ['#2c5e27', '#79b84f', 'round'], near: ['#2f6a25', '#5d9c3a'],
+      soil: ['#6b4a2f', '#3c2817'], top: '#5e9e36', topLit: '#93d35c', haze: '#e6f4f8' },
+    { sky: ['#2b2a5c', '#c55a6a', '#ffbb70'], sun: [0.72, 0.78, '#fff1c4', 1], cloud: ['#ffc59a', '#8a4466'],
+      far: ['#6a3f5f', '#b86c78'], mid: ['#4a2a3f', '#8d4d50'], tree: ['#2c1a29', '#6a3a3e', 'poplar'], near: ['#2a1823', '#56303a'],
+      soil: ['#7a4a32', '#3a2016'], top: '#8a6a3a', topLit: '#c79a58', haze: '#ffbb70' },
+    { sky: ['#050918', '#141e45', '#2e3a72'], moon: [0.8, 0.22], far: ['#1b2548', '#33437c'], mid: ['#111934', '#223060'],
+      tree: ['#080d1f', '#1b2850', 'pine'], near: ['#070b19', '#141d3a'],
+      soil: ['#263224', '#0f160e'], top: '#2c4630', topLit: '#4b6f4a', haze: '#2e3a72' },
+  ];
+  const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+  function makeCanvas(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, Math.ceil(w)); c.height = Math.max(1, Math.ceil(h)); return c; }
+  // periodic fractal ridge over [0, w): low frequencies give the silhouette, high ones the rocky detail
+  function ridgeFn(rand, w, freqs, sharp) {
+    const parts = freqs.map(f => ({ f, a: Math.pow(f, -1.2) * (0.6 + rand() * 0.8), p: rand() * Math.PI * 2 }));
+    const raw = x => { let v = 0; for (const q of parts) { const s = Math.sin(2 * Math.PI * q.f * x / w + q.p); v += q.a * (sharp && q.f <= 8 ? 1 - 2 * Math.abs(s) : s); } return v; };
+    let lo = Infinity, hi = -Infinity;
+    for (let i = 0; i < 400; i++) { const v = raw(i * w / 400); lo = Math.min(lo, v); hi = Math.max(hi, v); }
+    return x => (raw(((x % w) + w) % w) - lo) / (hi - lo || 1);
   }
+  function grain(x, w, h, n, alpha, rand) {
+    x.globalCompositeOperation = 'source-atop';
+    for (let i = 0; i < n; i++) {
+      x.fillStyle = rand() < 0.5 ? `rgba(0,0,0,${alpha})` : `rgba(255,255,255,${alpha * 0.7})`;
+      const s = 1 + rand() * 2.2; x.fillRect(rand() * w, rand() * h, s, s);
+    }
+    x.globalCompositeOperation = 'source-over';
+  }
+  // silhouette shaded column by column; returns the top-of-ridge function (device px)
+  function paintRidge(x, w, h, rand, o) {
+    const f = ridgeFn(rand, w, o.freqs, o.sharp), top = i => h - (o.base + f(i) * o.amp) * h;
+    // light comes from the slope of a smoothed ridge, so whole faces are lit or shaded (no per-column stripes)
+    const ys = new Float32Array(w), sm = new Float32Array(w), R = Math.max(2, Math.round(w / 220));
+    for (let i = 0; i < w; i++) ys[i] = top(i);
+    let acc = 0; for (let i = -R; i <= R; i++) acc += ys[(i + w) % w];
+    for (let i = 0; i < w; i++) { sm[i] = acc / (2 * R + 1); acc += ys[(i + R + 1) % w] - ys[(i - R + w) % w]; }
+    const k = (o.lightK || 0.9) * 1.6;
+    for (let i = 0; i < w; i++) {
+      const y = ys[i], slope = (sm[(i + 1) % w] - sm[(i - 1 + w) % w]) / 2; // >0 = falls to the right, faces the sun on the left
+      const light = clamp01(0.45 + slope * k);
+      const g = x.createLinearGradient(0, y, 0, h);
+      g.addColorStop(0, mix(o.col[0], o.col[1], light)); g.addColorStop(1, mix(o.col[0], o.col[1], light * 0.35));
+      x.fillStyle = g; x.fillRect(i, y, 1.5, h - y + 1);
+      if (o.snow && f(i) > o.snow) {
+        const len = (f(i) - o.snow) * o.amp * h * (1.5 + 0.35 * Math.sin(i * 0.045) + 0.15 * Math.sin(i * 0.19));
+        const sg = x.createLinearGradient(0, y, 0, y + len);
+        sg.addColorStop(0, mix('#c9d6e6', '#ffffff', light)); sg.addColorStop(1, 'rgba(230,238,246,0)');
+        x.fillStyle = sg; x.fillRect(i, y, 1.5, len);
+      }
+    }
+    return top;
+  }
+  function haze(x, w, h, col, a0, a1, y0 = 0) {
+    const [r, g, b] = hex(col), gr = x.createLinearGradient(0, y0, 0, h);
+    gr.addColorStop(0, `rgba(${r},${g},${b},${a0})`); gr.addColorStop(1, `rgba(${r},${g},${b},${a1})`);
+    x.globalCompositeOperation = 'source-atop'; x.fillStyle = gr; x.fillRect(0, 0, w, h); x.globalCompositeOperation = 'source-over';
+  }
+  function wrapDraw(w, size, px, fn) { fn(px); if (px < size) fn(px + w); if (px > w - size) fn(px - w); }
+  function blob(x, cx, cy, r, dark, lit) { // a lit sphere of foliage
+    const g = x.createRadialGradient(cx - r * 0.4, cy - r * 0.45, r * 0.1, cx, cy, r);
+    g.addColorStop(0, lit); g.addColorStop(1, dark); x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill();
+  }
+  function tree(x, kind, px, py, s, dark, lit, rand) {
+    if (kind === 'pine') {
+      x.fillStyle = dark; x.fillRect(px - s * 0.06, py - s * 0.4, s * 0.12, s * 0.4);
+      for (let k = 0; k < 5; k++) {
+        const y0 = py - s * (0.25 + k * 0.38), half = s * (0.62 - k * 0.1);
+        x.fillStyle = dark; x.beginPath(); x.moveTo(px - half, y0); x.lineTo(px, y0 - s * 0.62); x.lineTo(px + half, y0); x.closePath(); x.fill();
+        x.fillStyle = lit; x.beginPath(); x.moveTo(px - half, y0); x.lineTo(px, y0 - s * 0.62); x.lineTo(px - half * 0.35, y0); x.closePath(); x.fill();
+      }
+    } else if (kind === 'poplar') {
+      x.fillStyle = dark; x.fillRect(px - s * 0.05, py - s * 0.5, s * 0.1, s * 0.5);
+      blob(x, px, py - s * 1.25, s * 0.32, dark, lit); x.beginPath(); x.ellipse(px, py - s * 1.1, s * 0.3, s * 0.85, 0, 0, Math.PI * 2);
+      const g = x.createLinearGradient(px - s * 0.3, 0, px + s * 0.3, 0); g.addColorStop(0, lit); g.addColorStop(0.55, dark); x.fillStyle = g; x.fill();
+    } else {
+      x.fillStyle = mix(dark, '#000000', 0.25); x.fillRect(px - s * 0.07, py - s * 0.7, s * 0.14, s * 0.7);
+      const n = 5 + (rand() * 3 | 0);
+      for (let k = 0; k < n; k++) blob(x, px + (rand() - 0.5) * s * 0.9, py - s * (0.95 + rand() * 0.55), s * (0.3 + rand() * 0.22), dark, lit);
+    }
+  }
+  function paintBiome(bi, TW) {
+    const p = PAL[bi], rand = mulberry32(1234 + bi * 977), R = Math.min(DPR, 1.5), L = {};
+    // sky (static, full width)
+    {
+      const sc = R * 0.5, w = W * sc, h = GROUND * sc, c = makeCanvas(w, h), x = c.getContext('2d');
+      const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, p.sky[0]); g.addColorStop(0.62, p.sky[1]); g.addColorStop(1, p.sky[2]);
+      x.fillStyle = g; x.fillRect(0, 0, w, h);
+      if (p.cave) { // faint light shafts from cracks in the ceiling
+        for (let k = 0; k < 3; k++) {
+          const sx = w * (0.2 + k * 0.3 + rand() * 0.1), gr = x.createLinearGradient(0, 0, 0, h);
+          gr.addColorStop(0, 'rgba(255,214,150,0.16)'); gr.addColorStop(1, 'rgba(255,214,150,0)');
+          x.fillStyle = gr; x.beginPath(); x.moveTo(sx, 0); x.lineTo(sx + w * 0.03, 0); x.lineTo(sx + w * 0.12, h); x.lineTo(sx + w * 0.02, h); x.closePath(); x.fill();
+        }
+      }
+      if (p.sun) {
+        const sx = w * p.sun[0], sy = h * p.sun[1], r = Math.min(w, h) * (p.sun[3] ? 0.11 : 0.06);
+        const gl = x.createRadialGradient(sx, sy, r * 0.5, sx, sy, r * 9);
+        gl.addColorStop(0, 'rgba(255,248,220,0.75)'); gl.addColorStop(0.25, 'rgba(255,236,190,0.25)'); gl.addColorStop(1, 'rgba(255,236,190,0)');
+        x.fillStyle = gl; x.fillRect(0, 0, w, h); x.fillStyle = p.sun[2]; x.beginPath(); x.arc(sx, sy, r, 0, Math.PI * 2); x.fill();
+        if (p.sun[3]) { // long sunset cloud streaks
+          for (let k = 0; k < 7; k++) {
+            x.fillStyle = `rgba(${k % 2 ? '255,170,120' : '140,70,110'},${0.18 + rand() * 0.2})`;
+            const y = h * (0.25 + rand() * 0.5), cx = rand() * w, len = w * (0.2 + rand() * 0.35);
+            x.beginPath(); x.ellipse(cx, y, len, h * 0.012 + rand() * h * 0.01, 0, 0, Math.PI * 2); x.fill();
+          }
+        }
+      }
+      if (p.moon) {
+        const mx = w * p.moon[0], my = h * p.moon[1], r = Math.min(w, h) * 0.055;
+        const gl = x.createRadialGradient(mx, my, r, mx, my, r * 7); gl.addColorStop(0, 'rgba(200,215,255,0.35)'); gl.addColorStop(1, 'rgba(200,215,255,0)');
+        x.fillStyle = gl; x.fillRect(0, 0, w, h);
+        const mg = x.createRadialGradient(mx - r * 0.3, my - r * 0.3, r * 0.2, mx, my, r); mg.addColorStop(0, '#fbf8ec'); mg.addColorStop(1, '#cfd3dc');
+        x.fillStyle = mg; x.beginPath(); x.arc(mx, my, r, 0, Math.PI * 2); x.fill();
+        x.fillStyle = 'rgba(120,125,140,0.25)';
+        for (const [dx, dy, rr] of [[-0.3, -0.2, 0.22], [0.25, 0.15, 0.16], [-0.05, 0.4, 0.12], [0.35, -0.35, 0.1]]) { x.beginPath(); x.arc(mx + dx * r, my + dy * r, rr * r, 0, Math.PI * 2); x.fill(); }
+      }
+      L.sky = c;
+    }
+    const layer = (name, frac, top, ht, paint) => {
+      const sc = R * frac, w = Math.round(TW * sc), h = Math.max(2, ht * sc), c = makeCanvas(w, h);
+      paint(c.getContext('2d'), c.width, c.height, sc); L[name] = { c, y: top, h: ht };
+    };
+    if (p.cloud) layer('clouds', 0.6, 0, GROUND * 0.62, (x, w, h, sc) => {
+      const n = Math.max(4, Math.round(TW / 260));
+      for (let k = 0; k < n; k++) {
+        const cx = (k + rand() * 0.6) * w / n, cy = h * (0.3 + rand() * 0.55), s = (16 + rand() * 22) * sc * S, puffs = 10 + (rand() * 8 | 0);
+        const pts = Array.from({ length: puffs }, () => { const u = rand() - 0.5; return [u * s * 4.2, -rand() * s * 0.7 * (1 - Math.abs(u) * 1.4), s * (0.35 + rand() * 0.4) * (1 - Math.abs(u))]; });
+        wrapDraw(w, s * 3, cx, X => {
+          x.globalAlpha = 0.75; x.fillStyle = p.cloud[1];
+          for (const [dx, dy, r] of pts) { x.beginPath(); x.arc(X + dx, cy + dy + r * 0.25, r, 0, Math.PI * 2); x.fill(); }
+          x.globalAlpha = 0.95;
+          for (const [dx, dy, r] of pts) { const g = x.createRadialGradient(X + dx - r * 0.3, cy + dy - r * 0.4, r * 0.1, X + dx, cy + dy, r); g.addColorStop(0, p.cloud[0]); g.addColorStop(1, mix(p.cloud[0], p.cloud[1], 0.45)); x.fillStyle = g; x.beginPath(); x.arc(X + dx, cy + dy - r * 0.08, r * 0.9, 0, Math.PI * 2); x.fill(); }
+          x.globalAlpha = 1;
+        });
+      }
+    });
+    if (p.cave) {
+      // back wall: rock face with ceiling, strata and glowing mushrooms
+      layer('far', 0.6, 0, GROUND, (x, w, h) => {
+        const bg = x.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#22170f'); bg.addColorStop(0.5, '#3b2a1d'); bg.addColorStop(1, '#2a1c12');
+        x.fillStyle = bg; x.fillRect(0, 0, w, h);
+        for (let k = 0; k < Math.round(w / 40); k++) { // big lit and shaded rock faces
+          const px = rand() * w, py = rand() * h, r = (30 + rand() * 90) * S;
+          wrapDraw(w, r, px, X => { const g = x.createRadialGradient(X - r * 0.3, py - r * 0.3, r * 0.1, X, py, r); const lit = rand() < 0.5;
+            g.addColorStop(0, lit ? 'rgba(120,88,60,0.28)' : 'rgba(10,6,3,0.3)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(X - r, py - r, r * 2, r * 2); });
+        }
+        paintRidge(x, w, h, rand, { freqs: [2, 3, 5, 8, 13, 21, 34, 55], base: 0.04, amp: 0.22, col: p.far, sharp: 1 });
+        x.save(); x.scale(1, -1); x.translate(0, -h);
+        paintRidge(x, w, h, rand, { freqs: [3, 5, 8, 13, 21, 34, 89], base: 0.02, amp: 0.2, col: ['#140d08', '#2c1f15'], sharp: 1 });
+        x.restore();
+        x.globalCompositeOperation = 'source-atop';
+        for (let k = 0; k < 14; k++) { x.strokeStyle = `rgba(0,0,0,${0.12 + rand() * 0.12})`; x.lineWidth = 1 + rand() * 2; const y = h * (0.35 + rand() * 0.6), fr = 1 + (rand() * 4 | 0), ph = rand() * 6; x.beginPath(); for (let i = 0; i <= w; i += 6) x.lineTo(i, y + Math.sin(i / w * Math.PI * 2 * fr + ph) * h * 0.02); x.stroke(); }
+        x.globalCompositeOperation = 'source-over';
+        haze(x, w, h, p.haze, 0, 0.35); grain(x, w, h, w * h / 70, 0.07, rand);
+      });
+      layer('mid', 0.8, 0, GROUND, (x, w, h, sc) => {
+        for (let k = 0; k < Math.round(TW / 120); k++) { // stalactites / stalagmites
+          const px = rand() * w, s = (30 + rand() * 70) * sc * S, up = rand() < 0.5;
+          wrapDraw(w, s, px, X => {
+            const g = x.createLinearGradient(X - s * 0.3, 0, X + s * 0.3, 0); g.addColorStop(0, p.mid[1]); g.addColorStop(1, p.mid[0]); x.fillStyle = g;
+            x.beginPath(); if (up) { x.moveTo(X - s * 0.32, 0); x.quadraticCurveTo(X - s * 0.05, s * 1.2, X, s * 1.9); x.quadraticCurveTo(X + s * 0.08, s * 1.1, X + s * 0.3, 0); }
+            else { x.moveTo(X - s * 0.4, h); x.quadraticCurveTo(X - s * 0.08, h - s * 1.0, X, h - s * 1.5); x.quadraticCurveTo(X + s * 0.1, h - s * 0.9, X + s * 0.4, h); }
+            x.closePath(); x.fill();
+          });
+        }
+        x.strokeStyle = '#4a3423'; x.lineCap = 'round';
+        for (let k = 0; k < Math.round(TW / 90); k++) { const px = rand() * w, len = (40 + rand() * 90) * sc * S; x.lineWidth = (1 + rand() * 2.5) * sc; wrapDraw(w, 30, px, X => { x.beginPath(); x.moveTo(X, 0); x.bezierCurveTo(X + 12 * sc, len * 0.3, X - 10 * sc, len * 0.7, X + 5 * sc, len); x.stroke(); }); }
+        for (let k = 0; k < Math.round(TW / 160); k++) { // glow mushrooms
+          const px = rand() * w, py = h - rand() * 6 * sc, s = (4 + rand() * 5) * sc * S;
+          wrapDraw(w, 40, px, X => { const g = x.createRadialGradient(X, py - s, 0, X, py - s, s * 6); g.addColorStop(0, 'rgba(120,255,210,0.35)'); g.addColorStop(1, 'rgba(120,255,210,0)'); x.fillStyle = g; x.fillRect(X - s * 6, py - s * 7, s * 12, s * 12);
+            x.fillStyle = '#d8f5e6'; x.fillRect(X - s * 0.15, py - s, s * 0.3, s); x.fillStyle = '#6fe8c0'; x.beginPath(); x.ellipse(X, py - s, s * 0.7, s * 0.4, 0, Math.PI, 0); x.fill(); });
+        }
+      });
+    } else {
+      layer('far', 0.6, GROUND * 0.22, GROUND * 0.78, (x, w, h) => {
+        paintRidge(x, w, h, rand, { freqs: [2, 3, 4, 6, 9, 14, 22, 35, 55, 90], base: 0.12, amp: 0.62, col: p.far, sharp: 1, snow: p.snow, lightK: 1.2 });
+        haze(x, w, h, p.haze, 0.05, 0.75, h * 0.2); grain(x, w, h, w * h / 90, 0.05, rand);
+      });
+      layer('mid', 0.8, GROUND * 0.48, GROUND * 0.52, (x, w, h, sc) => {
+        const top = paintRidge(x, w, h, rand, { freqs: [2, 3, 5, 7, 11, 17, 29, 47], base: 0.18, amp: 0.38, col: p.mid, lightK: 0.6 });
+        const [dark, lit, kind] = p.tree;
+        let px = rand() * 20 * sc;
+        while (px < w) {
+          const cluster = rand() < 0.55, s = (14 + rand() * 18) * sc * S * (kind === 'pine' ? 1.25 : 1);
+          if (cluster) wrapDraw(w, s * 1.2, px, X => tree(x, kind, X, top(X) + s * 0.15, s, dark, lit, rand));
+          px += cluster ? s * (0.5 + rand() * 0.9) : s * (2 + rand() * 5);
+        }
+        haze(x, w, h, p.haze, 0.18, 0.02); grain(x, w, h, w * h / 110, 0.05, rand);
+      });
+      layer('near', 1, GROUND * 0.78, GROUND * 0.22 + 2, (x, w, h, sc) => {
+        const top = paintRidge(x, w, h, rand, { freqs: [3, 5, 8, 13, 21, 34, 55, 89, 144], base: 0.08, amp: 0.3, col: p.near, lightK: 0.5 });
+        const [dark, lit] = p.near;
+        for (let k = 0; k < Math.round(TW / 70); k++) { const px = rand() * w, s = (8 + rand() * 12) * sc * S; wrapDraw(w, s * 2, px, X => { for (let j = 0; j < 4; j++) blob(x, X + (j - 1.5) * s * 0.55, top(X) + s * 0.2 - rand() * s * 0.3, s * (0.45 + rand() * 0.25), dark, lit); }); }
+      });
+    }
+    // ground: soil with strata, pebbles and a grass (or dirt) lip; tiles with the obstacles' speed
+    layer('ground', 1, GROUND - 14 * S, H - GROUND + 14 * S, (x, w, h, sc) => {
+      const y0 = 14 * S * sc, g = x.createLinearGradient(0, y0, 0, h); g.addColorStop(0, p.soil[0]); g.addColorStop(1, p.soil[1]);
+      x.fillStyle = g; x.fillRect(0, y0, w, h - y0);
+      for (let k = 0; k < 6; k++) { // strata bands
+        const y = y0 + (h - y0) * (0.18 + k * 0.14 + rand() * 0.05), fr = 2 + (rand() * 5 | 0), ph = rand() * 6;
+        x.fillStyle = `rgba(0,0,0,${0.07 + rand() * 0.08})`; x.beginPath(); x.moveTo(0, y);
+        for (let i = 0; i <= w; i += 8) x.lineTo(i, y + Math.sin(i / w * Math.PI * 2 * fr + ph) * 4 * sc);
+        for (let i = w; i >= 0; i -= 8) x.lineTo(i, y + 3 * sc + rand() * 3 * sc + Math.sin(i / w * Math.PI * 2 * fr + ph) * 4 * sc); x.closePath(); x.fill();
+      }
+      for (let k = 0; k < w * (h - y0) / 3200; k++) { // embedded pebbles
+        const px = rand() * w, py = y0 + 18 * sc + rand() * (h - y0), r = (1 + rand() * rand() * 5) * sc;
+        x.fillStyle = `rgba(0,0,0,0.18)`; x.beginPath(); x.ellipse(px, py + r * 0.3, r * 1.2, r * 0.8, 0, 0, Math.PI * 2); x.fill();
+        x.fillStyle = mix(p.soil[0], '#d8c8b0', 0.12 + rand() * 0.22); x.beginPath(); x.ellipse(px, py, r * 1.1, r * 0.7, 0, 0, Math.PI * 2); x.fill();
+      }
+      grain(x, w, h, w * h / 40, 0.06, rand);
+      // lip: a turf band with blades poking up, or packed dirt in the burrow
+      x.fillStyle = p.top; x.fillRect(0, y0, w, 8 * sc * S);
+      x.fillStyle = 'rgba(0,0,0,0.25)'; x.fillRect(0, y0 + 8 * sc * S, w, 3 * sc);
+      const blades = p.cave ? 0 : Math.round(w / 2.2);
+      for (let k = 0; k < blades; k++) {
+        const bx = (k / blades) * w + rand() * 3, bh = (5 + rand() * 11) * sc * S, lean = (rand() - 0.4) * 5 * sc;
+        x.fillStyle = mix(p.top, p.topLit, rand()); x.beginPath(); x.moveTo(bx - 1.6 * sc, y0 + 6 * sc); x.lineTo(bx + lean, y0 + 6 * sc - bh); x.lineTo(bx + 1.6 * sc, y0 + 6 * sc); x.closePath(); x.fill();
+      }
+      if (p.cave) for (let k = 0; k < w / 14; k++) { x.fillStyle = mix(p.top, p.topLit, rand()); const r = (1.5 + rand() * 3) * sc; x.beginPath(); x.ellipse(rand() * w, y0 + 2 * sc + rand() * 4 * sc, r * 1.3, r, 0, 0, Math.PI * 2); x.fill(); }
+    });
+    return L;
+  }
+  const bgCache = new Map();
+  let bgLayers = null, TILE = 0;
+  function buildBg() {
+    TILE = Math.ceil(W / 256) * 256 + 256;
+    const key = [W, H, GROUND, DPR, S].join('x');
+    bgLayers = bgCache.get(key);
+    if (!bgLayers) {
+      bgLayers = PAL.map(() => null); // painted lazily, one area at a time
+      bgCache.set(key, bgLayers);
+      if (bgCache.size > 2) bgCache.delete(bgCache.keys().next().value);
+    }
+  }
+  function biomeLayers(i) { return bgLayers[i] || (bgLayers[i] = paintBiome(i, TILE)); }
   const hex = c => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
   function mix(a, b, k) { const A = hex(a), B = hex(b); return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * k)).join(',')})`; }
   function biomeAt(d) {
@@ -275,6 +505,7 @@
     gold:   () => { tone('triangle', 880, 1320, 0.1, 0.08); tone('triangle', 1320, 1980, 0.12, 0.08, 0.08); },
     shield: () => tone('sine', 300, 120, 0.25, 0.15),
     bonk:   () => { tone('sawtooth', 220, 55, 0.35, 0.12); tone('square', 1100, 300, 0.12, 0.05); },
+    stomp:  () => { tone('square', 260, 90, 0.12, 0.09); tone('triangle', 700, 1500, 0.14, 0.08, 0.05); },
     mile:   () => { tone('triangle', 660, 660, 0.08, 0.06); tone('triangle', 990, 990, 0.12, 0.06, 0.09); },
   };
   function renderMute() { $mute.textContent = muted ? 'Sound off' : 'Sound on'; }
@@ -286,6 +517,7 @@
   // ---------- game state ----------
   const G = 2600, JUMP = 900, COYOTE = 0.09, BUFFER = 0.13;
   let state = 'demo', t = 0, speed, dist, seeds, obstacles, pickups, particles, popups, hills, roots, clouds, stars, flies, lastBiome = 0;
+  let bonus = 0, stomps = 0, combo = 0;
   let nextObstacleAt, nextSeedsAt, shake = 0, flash = 0, nextMile, banner = null, shield = false;
   let sinceGround = 0, bufferT = 0, holding = false, ducking = false;
   const ham = { x: 0, y: 0, vy: 0, jumps: 0, r: 26, squash: 1, blink: 2 };
@@ -320,7 +552,7 @@
     courseRound = roundNow(); rng = mulberry32(hashStr('hamsterdash/round/' + courseRound));
     wheelMm = 0; wheelSeen = false;
     work = 0; blocksRun = 0; pending = 0; banked = 0; nextCp = CP_EVERY;
-    speed = 360; dist = 0; seeds = 0; obstacles = []; pickups = []; particles = []; popups = [];
+    speed = 360; dist = 0; seeds = 0; bonus = 0; stomps = 0; combo = 0; obstacles = []; pickups = []; particles = []; popups = [];
     nextObstacleAt = 700; nextSeedsAt = 400; nextMile = 100; banner = null; shield = false;
     shake = 0; flash = 0; sinceGround = 0; bufferT = 0;
     ham.x = Math.max(70, W * 0.2); ham.y = GROUND; ham.vy = 0; ham.jumps = 0; ham.squash = 1;
@@ -413,6 +645,15 @@
       obstacles.push(make('pebble', W + 40));
       obstacles.push(make('pebble', W + 40 + (60 + rng() * 30) * S));
     } else obstacles.push(make(kind, W + 40));
+    // sometimes a seed arc traces the hop over the obstacle: jump at the right moment to collect it
+    if (rng() < 0.35) {
+      const first = obstacles[obstacles.length - (kind === 'pair' ? 2 : 1)], last = obstacles[obstacles.length - 1];
+      const cx = (first.x + last.x + last.w) / 2, half = speed * airtime() / 2, peak = JUMP * JUMP / (2 * G) * S;
+      for (let i = 0; i < 5; i++) {
+        const u = -0.6 + i * 0.3;
+        pickups.push({ x: cx + u * half, y: GROUND - ham.r * S * 0.9 - peak * (1 - u * u) * 0.92, gold: false, got: false, arc: true });
+      }
+    }
     // minimum gap = distance covered during one hop + margin, so there is always room to land and hop again
     nextObstacleAt = dist + minGap + rng() * Math.max(120, 520 - d * 300) * S;
   }
@@ -420,8 +661,17 @@
     const n = 3 + (rng() * 4 | 0), high = rng() < 0.45;
     const gRoll = rng(), gIdx = rng() * n | 0; // always draw both so the course stays identical for everyone
     const golden = !shield && gRoll < 0.12 ? gIdx : -1;
+    // keep the row clear of hazards: start it after anything already on screen and push the next hazard
+    // past its end, with a reaction gap on both sides, so grabbing seeds never forces you into an obstacle
+    const gapX = 38 * S, span = (n - 1) * gapX, pad = speed * 0.32 + 30 * S;
+    let x0 = W + 40;
+    for (let pass = 0; pass < 4; pass++) for (const o of obstacles) {
+      const ox = o.kind === 'flyer' ? o.x - 24 * S : o.x - 8 * S, ow = o.w + (o.kind === 'flyer' ? 48 : 16) * S;
+      if (ox < x0 + span + pad && ox + ow + pad > x0) x0 = ox + ow + pad;
+    }
+    nextObstacleAt = Math.max(nextObstacleAt, dist + (x0 - (W + 40)) + span + pad);
     for (let i = 0; i < n; i++)
-      pickups.push({ x: W + 40 + i * 38 * S, y: GROUND - (high ? 150 : 42) * S - Math.sin(i / (n - 1 || 1) * Math.PI) * 40 * S,
+      pickups.push({ x: x0 + i * gapX, y: GROUND - (high ? 150 : 42) * S - Math.sin(i / (n - 1 || 1) * Math.PI) * 40 * S,
         gold: i === golden, got: false });
     nextSeedsAt = dist + 500 + rng() * 600;
   }
@@ -433,7 +683,16 @@
   function popup(x, y, text, col) { popups.push({ x, y, text, col, life: 0.8 }); }
 
   // ---------- update ----------
-  function score() { return seeds * 10 + Math.floor(dist / 100); }
+  function score() { return seeds * 10 + Math.floor(dist / 100) + bonus; }
+  function stomp(o, fx, fy) {
+    combo++; stomps++;
+    const pts = 50 * combo; bonus += pts;
+    o.fall = true; o.fvy = -260 * S; o.rot = 0;
+    ham.vy = -JUMP * S * 0.8; ham.jumps = 1; ham.squash = 0.65; // bounce, and the double hop is available again
+    sfx.stomp(); shake = 0.12;
+    puff(fx, fy, 12, o.sp === 'eagle' ? '#7a4520' : '#4a3663'); puff(fx, fy, 6, '#f7f3ea');
+    popup(fx, fy - 26 * S, combo > 1 ? `+${pts} x${combo} combo` : `+${pts} stomp`, '#ff8f5a');
+  }
   function hit() {
     if (shield) {
       shield = false; sfx.shield(); shake = 0.15; flash = 0.15;
@@ -482,7 +741,7 @@
     ham.y += ham.vy * dt;
     if (ham.y >= GROUND) {
       if (ham.jumps) { ham.squash = 1.25; puff(ham.x, GROUND, 4, '#c9a27a'); }
-      ham.y = GROUND; ham.vy = 0; ham.jumps = 0; sinceGround = 0;
+      ham.y = GROUND; ham.vy = 0; ham.jumps = 0; sinceGround = 0; combo = 0;
       if (bufferT > 0) tryJump(); // buffered press just before landing
     } else sinceGround += dt;
     bufferT = Math.max(0, bufferT - dt);
@@ -499,11 +758,8 @@
     if (state === 'play' && dist >= nextCp) checkpoint();
 
     const dx = speed * dt;
-    for (const o of obstacles) o.x -= dx;
+    for (const o of obstacles) { o.x -= dx; if (o.fall) { o.fvy += 1800 * S * dt; o.y += o.fvy * dt; o.rot += 7 * dt; if (o.y > H + 80) o.dead = true; } }
     for (const p of pickups) p.x -= dx;
-    for (const h of hills) { h.x -= dx * 0.25; if (h.x < -200) h.x += hills.length * 240; }
-    for (const rt of roots) { rt.x -= dx * 0.5; if (rt.x < -40) rt.x += roots.length * 110; }
-    for (const c of clouds) { c.x -= dx * 0.12; if (c.x < -200) c.x += clouds.length * 320; }
     for (const f of flies) { f.x -= dx * 0.6; if (f.x < -10) f.x += W + 20; }
     obstacles = obstacles.filter(o => o.x + o.w > -60 && !o.dead);
     pickups = pickups.filter(p => p.x > -50 && !p.got);
@@ -512,7 +768,10 @@
     const hx = ham.x, hy = ham.y - r * (ducking ? 0.5 : 0.9), hr = r * (ducking ? 0.5 : 0.62);
     for (const o of obstacles) {
       if (o.kind === 'flyer') {
+        if (o.fall) continue;
         const fx = o.x + o.w / 2, fy = o.y + Math.sin(t * 3 + o.phase) * 5 * S, fr = 15 * S + hr;
+        // landing on top of an eagle or bat while falling = stomp it (bounce, points, combo while airborne)
+        if (ham.vy > 0 && ham.y < fy + 6 * S && Math.abs(hx - fx) < o.w / 2 + hr && (hx - fx) ** 2 + (hy - fy) ** 2 < (fr + 14 * S) ** 2) { stomp(o, fx, fy); continue; }
         if ((hx - fx) ** 2 + (hy - fy) ** 2 < fr * fr) { o.dead = true; if (hit()) return; }
         continue;
       }
@@ -590,7 +849,7 @@
         ? `The real hamster ran <b>${realM.toFixed(1)} m</b> on its wheel during your run.`
         : '';
       $msg.innerHTML = (isBest ? '<b>New best!</b>' : 'Score') + `<span class="big">${s}</span>` +
-        `${seeds} seeds · ${Math.floor(dist / 100)} m · round best ${rb}` + `<small>${eco}</small>` + (race ? `<small>${race}</small>` : '') +
+        `${seeds} seeds · ${Math.floor(dist / 100)} m` + (stomps ? ` · ${stomps} stomp${stomps === 1 ? '' : 's'} (+${bonus})` : '') + ` · round best ${rb}` + `<small>${eco}</small>` + (race ? `<small>${race}</small>` : '') +
         '<span class="sim">SQK here is simulated with Squeekchain\'s real issuance and staking rules — not real tokens.</span>';
       document.body.classList.remove('playing'); tickClock();
       $play.textContent = 'Again';
@@ -603,64 +862,43 @@
   function drawBg() {
     const { cur, prev, k } = biomeAt(dist), A = BIOMES[prev], B = BIOMES[cur];
     ctx.imageSmoothingEnabled = true;
-    if (k < 1) ctx.drawImage(bgLayers[prev], 0, 0, W, H);
-    ctx.globalAlpha = k; ctx.drawImage(bgLayers[cur], 0, 0, W, H); ctx.globalAlpha = 1;
-    const wA = 1 - k, wB = k, w = b => (b === A ? wA : 0) + (b === B ? wB : 0);
-    const has = f => (A[f] ? wA : 0) + (B[f] ? wB : 0);
-    // sky decor
+    const tile = (l, par) => {
+      const off = ((dist * par) % TILE + TILE) % TILE;
+      ctx.drawImage(l.c, -off, l.y, TILE, l.h);
+      if (TILE - off < W) ctx.drawImage(l.c, TILE - off, l.y, TILE, l.h);
+    };
+    const scene = (i, alpha, upToSky) => {
+      const L = biomeLayers(i);
+      ctx.globalAlpha = alpha;
+      if (upToSky) { ctx.drawImage(L.sky, 0, 0, W, GROUND); ctx.globalAlpha = 1; return; }
+      if (L.clouds) tile(L.clouds, 0.04);
+      tile(L.far, 0.1);
+      tile(L.mid, 0.3);
+      if (L.near) tile(L.near, 0.6);
+      tile(L.ground, 1);
+      ctx.globalAlpha = 1;
+    };
+    const has = f => (A[f] ? 1 - k : 0) + (B[f] ? k : 0);
+    // skies first (opaque), then stars, then the scrolling layers of each area
+    if (k < 1) scene(prev, 1, true);
+    scene(cur, k, true);
     let a;
     if ((a = has('stars')) > 0.01) {
       ctx.fillStyle = '#ffffff';
-      for (const st of stars) { ctx.globalAlpha = a * (0.5 + 0.5 * Math.sin(t * 2 + st.p)); ctx.fillRect(st.x, st.y, st.r, st.r); }
-      ctx.globalAlpha = a; ctx.fillStyle = '#f4f1de'; circle(W * 0.8, GROUND * 0.22, 26 * S);
-      ctx.fillStyle = B.stars ? B.sky[0] : A.sky[0]; circle(W * 0.8 + 10 * S, GROUND * 0.22 - 6 * S, 22 * S);
+      for (const st of stars) { ctx.globalAlpha = a * (0.35 + 0.65 * Math.abs(Math.sin(t * 1.5 + st.p))); ctx.fillRect(st.x, st.y, st.r, st.r); }
       ctx.globalAlpha = 1;
     }
-    if ((a = has('sun')) > 0.01) {
-      ctx.globalAlpha = a * 0.35; ctx.fillStyle = '#fff1b8'; circle(W * 0.72, GROUND * 0.62, 90 * S);
-      ctx.globalAlpha = a; ctx.fillStyle = '#ffe08a'; circle(W * 0.72, GROUND * 0.62, 55 * S); ctx.globalAlpha = 1;
-    }
-    if ((a = has('clouds')) > 0.01) {
-      ctx.globalAlpha = a * 0.9; ctx.fillStyle = '#ffffff';
-      for (const c of clouds) { const z = c.s * S; ellipse(c.x, c.y, 50 * z, 18 * z); circle(c.x - 20 * z, c.y - 8 * z, 18 * z); circle(c.x + 14 * z, c.y - 12 * z, 22 * z); }
-      ctx.globalAlpha = 1;
-    }
-    // far hills (or pine silhouettes at night)
-    ctx.fillStyle = mix(A.hill, B.hill, k);
-    for (const h of hills) { ctx.beginPath(); ctx.ellipse(h.x, GROUND, h.w, h.h * S + 40, 0, Math.PI, 0); ctx.fill(); }
-    if ((a = has('trees')) > 0.01) {
-      ctx.globalAlpha = a; ctx.fillStyle = '#0e1528';
-      for (const h of hills) for (let i = 0; i < 3; i++) {
-        const tx = h.x - 60 + i * 55, th = (h.h * 0.9 + 60 + i * 12) * S;
-        ctx.beginPath(); ctx.moveTo(tx - 20 * S, GROUND); ctx.lineTo(tx, GROUND - th); ctx.lineTo(tx + 20 * S, GROUND); ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-    }
+    if (k < 1) scene(prev, 1);
+    scene(cur, k);
     drawGhost();
-    if ((a = has('roots')) > 0.01) {
-      ctx.globalAlpha = a; ctx.strokeStyle = '#5c4230'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-      ctx.beginPath();
-      for (const rt of roots) { ctx.moveTo(rt.x, 0); ctx.quadraticCurveTo(rt.x + rt.bend, rt.len * 0.6, rt.x + 4, rt.len); }
-      ctx.stroke(); ctx.globalAlpha = 1;
-    }
-    // ground lip + scrolling ground marks
-    ctx.fillStyle = mix(A.lip, B.lip, k); ctx.fillRect(0, GROUND, W, 6 * S);
-    ctx.fillStyle = mix(A.dash, B.dash, k);
-    const off = dist % 60;
-    for (let x = -off; x < W; x += 60) ctx.fillRect(x, GROUND + 22 * S, 18, 4);
-    const off2 = (dist * 1.3) % 90;
-    for (let x = -off2; x < W; x += 90) ctx.fillRect(x + 30, GROUND + 48 * S, 10, 3);
-    if ((a = has('grass')) > 0.01) {
-      ctx.globalAlpha = a; ctx.fillStyle = '#5aa43a';
-      const og = dist % 46;
-      for (let x = -og; x < W; x += 46) { ctx.beginPath(); ctx.moveTo(x, GROUND + 1); ctx.lineTo(x + 4, GROUND - 9 * S); ctx.lineTo(x + 8, GROUND + 1); ctx.lineTo(x + 12, GROUND - 6 * S); ctx.lineTo(x + 15, GROUND + 1); ctx.fill(); }
-      ctx.globalAlpha = 1;
-    }
     if ((a = has('stars')) > 0.01) { // fireflies at night
       ctx.fillStyle = '#e8ff8a';
       for (const f of flies) { ctx.globalAlpha = a * Math.max(0, Math.sin(t * 3 + f.p)); circle(f.x, f.y + Math.sin(t + f.p) * 6, 2.2); }
       ctx.globalAlpha = 1;
     }
+    // paint the next area in the background before we reach it
+    const nx = (cur + 1) % BIOMES.length;
+    if (!bgLayers[nx] && !drawBg.warming) { drawBg.warming = true; setTimeout(() => { biomeLayers(nx); drawBg.warming = false; }, 50); }
   }
 
   // the real Squeekchain hamster, drawn as a translucent "LIVE" ghost on the far ridge:
@@ -741,16 +979,16 @@
   // and a dark outline so they pop against the brown ground and hills
   const OUT = '#120a05';
   function drawFlyer(o) {
-    const cx = o.x + o.w / 2, cy = o.y + Math.sin(t * 3 + o.phase) * 5 * S, z = S;
+    const cx = o.x + o.w / 2, cy = o.y + (o.fall ? 0 : Math.sin(t * 3 + o.phase) * 5 * S), z = S;
     const flap = Math.sin(t * (o.sp === 'eagle' ? 9 : 16) + o.phase);
-    if (o.x > W - 20) { // incoming warning at the screen edge
+    if (o.x > W - 20 && !o.fall) { // incoming warning at the screen edge
       ctx.fillStyle = '#ff5a3c'; ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t * 14);
       circle(W - 22 * z, cy, 14 * z);
       ctx.globalAlpha = 1; ctx.fillStyle = '#fff'; ctx.font = `700 ${Math.round(18 * z)}px Fredoka, sans-serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', W - 22 * z, cy + 1);
       return;
     }
-    ctx.save(); ctx.translate(cx, cy); ctx.lineJoin = 'round'; ctx.strokeStyle = OUT; ctx.lineWidth = 2.5;
+    ctx.save(); ctx.translate(cx, cy); if (o.fall) { ctx.rotate(o.rot); ctx.scale(1, -1); ctx.globalAlpha = 0.85; } ctx.lineJoin = 'round'; ctx.strokeStyle = OUT; ctx.lineWidth = 2.5;
     if (o.sp === 'eagle') {
       // wings (up/down flap), body, white head, hooked yellow beak — faces left toward the hamster
       // wide feathered wings: far wing behind the body, near wing on top, beating up and down
@@ -845,7 +1083,8 @@
         ctx.fillStyle = '#ffd54a'; ellipse(0, 0, 7 * S, 12 * S);
         ctx.strokeStyle = '#fff6c8'; ctx.lineWidth = 1.5;
       } else {
-        ctx.fillStyle = '#ffe08a22'; circle(0, 0, 14 * S);
+        ctx.fillStyle = '#ffe08a40'; circle(0, 0, 15 * S);
+        ctx.fillStyle = '#f4ecd6'; ellipse(0, 0, 7.6 * S, 12.6 * S);
         ctx.fillStyle = '#3a3633'; ellipse(0, 0, 6 * S, 11 * S);
         ctx.strokeStyle = '#f4ecd6'; ctx.lineWidth = 2;
       }

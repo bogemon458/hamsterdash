@@ -19,70 +19,119 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><ellipse cx='50' cy='58' rx='40' ry='32' fill='%23e8a25c'/><circle cx='34' cy='26' r='11' fill='%23d98c45'/><circle cx='64' cy='28' r='10' fill='%23d98c45'/><circle cx='70' cy='50' r='6' fill='%231a0f08'/><ellipse cx='60' cy='66' rx='22' ry='17' fill='%23fbe7c8'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#1b1410; --card:#261b14; --line:#3a2a1e; --fg:#fbe9d0; --dim:#cdb89c; --accent:#f2a33a; --sq:#5fd3b5; }
+  :root { --bg:#0f0e0c; --surface:#171512; --raised:#1d1a16; --line:#2b2722; --line2:#3a342d; --fg:#ece7df; --dim:#a39b90; --faint:#6f685f;
+    --accent:#f2a33a; --sq:#5fd3b5; --mono:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
   * { box-sizing:border-box; margin:0; padding:0; }
   html { scroll-behavior:smooth; }
-  body { background:var(--bg); color:var(--fg); font-family:"Fredoka", ui-rounded, system-ui, sans-serif; font-size:17px; line-height:1.6; }
-  a { color:var(--sq); }
-  .top { position:sticky; top:0; z-index:5; background:#1b1410ee; backdrop-filter:blur(6px); border-bottom:1px solid var(--line); }
-  .top .in { max-width:860px; margin:0 auto; padding:10px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
-  .brand { font-weight:700; color:var(--accent); text-decoration:none; font-size:20px; }
-  .play { background:var(--accent); color:#2a1a0c; font-weight:700; text-decoration:none; padding:7px 18px; border-radius:999px; box-shadow:0 3px 0 #9c5d17; }
-  main { max-width:860px; margin:0 auto; padding:36px 16px 80px; }
-  .kicker { font-size:12px; letter-spacing:3px; text-transform:uppercase; color:var(--sq); font-weight:600; }
-  h1 { font-size:clamp(36px, 8vw, 56px); line-height:1; color:var(--accent); text-shadow:0 4px 0 #7a4a16; margin:8px 0 14px; }
-  .lead { font-size:19px; color:var(--dim); max-width:640px; }
-  nav.toc { margin:28px 0 8px; display:flex; flex-wrap:wrap; gap:8px; }
-  nav.toc a { text-decoration:none; color:var(--fg); background:var(--card); border:1px solid var(--line); padding:5px 12px; border-radius:999px; font-size:14px; }
-  nav.toc a:hover { border-color:var(--sq); }
-  section { margin-top:44px; scroll-margin-top:70px; }
-  h2 { font-size:26px; color:var(--accent); margin-bottom:10px; }
-  h2 span { color:var(--sq); font-size:16px; margin-right:8px; }
-  h3 { font-size:18px; margin:20px 0 6px; }
-  p, ul, ol { margin-bottom:12px; }
-  ul, ol { padding-left:22px; }
-  li { margin-bottom:4px; }
-  code { font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:.86em; background:#0005; padding:1px 6px; border-radius:6px; color:#ffe2b8; overflow-wrap:anywhere; }
-  pre { background:#0006; border:1px solid var(--line); border-radius:12px; padding:14px 16px; overflow-x:auto; margin-bottom:14px; font-size:14px; line-height:1.5; }
-  pre code { background:none; padding:0; }
-  .tbl { overflow-x:auto; margin-bottom:14px; }
-  table { border-collapse:collapse; width:100%; font-size:15px; }
-  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
-  th { color:var(--dim); font-weight:600; font-size:13px; text-transform:uppercase; letter-spacing:1px; }
-  .live { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px; margin:16px 0; }
-  .live div { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 14px; }
-  .live b { display:block; font-size:24px; color:var(--fg); }
-  .live span { font-size:13px; color:var(--dim); }
-  .note { background:#5fd3b512; border:1px solid #5fd3b544; border-radius:14px; padding:12px 16px; margin:14px 0; }
-  .flow { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:14px 0; }
-  .flow div { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:8px 12px; font-weight:600; }
-  .flow i { color:var(--sq); font-style:normal; }
-  .hero { display:grid; grid-template-columns:1fr 250px; gap:28px; align-items:center; }
-  .hero canvas { width:250px; height:250px; display:block; }
-  .wheelcap { text-align:center; font-size:13px; color:var(--dim); margin-top:2px; }
-  .wheelcap b { color:var(--sq); }
-  @media (max-width:720px) { .hero { grid-template-columns:1fr; } .hero .w { order:-1; justify-self:center; } .hero canvas { width:200px; height:200px; } }
-  .track { position:relative; height:4px; background:#ffffff10; }
-  .track i { position:absolute; left:0; top:0; bottom:0; width:0; background:linear-gradient(90deg, var(--sq), var(--accent)); }
-  #runner { position:absolute; top:-26px; left:0; width:44px; height:30px; pointer-events:none; }
-  .anim { width:100%; height:200px; display:block; background:#0004; border:1px solid var(--line); border-radius:16px; margin:16px 0 8px; }
+  body { background:var(--bg); color:var(--fg); font-family:Inter, system-ui, -apple-system, "Segoe UI", sans-serif; font-size:16px; line-height:1.7;
+    -webkit-font-smoothing:antialiased; font-feature-settings:"cv11", "ss01"; }
+  a { color:var(--sq); text-decoration-thickness:1px; text-underline-offset:3px; }
+  b, strong { font-weight:600; color:#fff; }
+  /* header */
+  .top { position:sticky; top:0; z-index:5; background:rgba(15,14,12,.82); backdrop-filter:saturate(1.4) blur(10px); border-bottom:1px solid var(--line); }
+  .top .in { max-width:1160px; margin:0 auto; padding:12px 24px; display:flex; align-items:center; gap:28px; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:600; color:var(--fg); text-decoration:none; font-size:15px; letter-spacing:-.01em; }
+  .brand svg { width:24px; height:24px; }
+  .brand small { color:var(--faint); font-weight:500; }
+  .links { display:flex; gap:22px; margin-left:auto; align-items:center; font-size:14px; }
+  .links a { color:var(--dim); text-decoration:none; } .links a:hover { color:var(--fg); }
+  .links a.play { color:#1a1208; background:var(--accent); font-weight:600; padding:7px 16px; border-radius:8px; }
+  .links a.play:hover { background:#f7b45a; color:#1a1208; }
+  @media (max-width:640px) { .links .hide-s { display:none; } .top .in { padding:10px 16px; } }
+  .track { position:relative; height:2px; }
+  .track i { position:absolute; left:0; top:0; bottom:0; width:0; background:var(--sq); }
+  #runner { display:none; }
+  /* layout */
+  .page { max-width:1160px; margin:0 auto; padding:0 24px; display:grid; grid-template-columns:200px minmax(0, 760px); gap:64px; justify-content:center; }
+  @media (max-width:980px) { .page { grid-template-columns:minmax(0, 760px); gap:0; padding:0 16px; } aside.toc { display:none; } }
+  aside.toc { position:sticky; top:84px; align-self:start; padding-top:56px; font-size:13.5px; }
+  aside.toc .t { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); font-weight:600; margin-bottom:12px; }
+  aside.toc a { display:flex; gap:10px; color:var(--dim); text-decoration:none; padding:5px 0 5px 12px; border-left:1px solid var(--line); line-height:1.4; }
+  aside.toc a span { font-family:var(--mono); font-size:11.5px; color:var(--faint); padding-top:1px; }
+  aside.toc a:hover, aside.toc a.on { color:var(--fg); border-left-color:var(--sq); }
+  main { padding:56px 0 96px; min-width:0; }
+  /* hero */
+  .kicker { font-family:var(--mono); font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--sq); }
+  .hero { display:grid; grid-template-columns:1fr 200px; gap:40px; align-items:center; }
+  h1 { font-size:clamp(34px, 6vw, 48px); line-height:1.1; letter-spacing:-.025em; font-weight:700; margin:14px 0 16px; color:#fff; }
+  .lead { font-size:18px; line-height:1.65; color:var(--dim); }
+  .hero canvas { width:200px; height:200px; display:block; }
+  .wheelcap { text-align:center; font-size:12px; color:var(--faint); margin-top:4px; line-height:1.5; }
+  .wheelcap b { color:var(--sq); font-weight:500; }
+  @media (max-width:720px) { .hero { grid-template-columns:1fr; gap:8px; } .hero .w { order:-1; justify-self:start; } .hero canvas { width:140px; height:140px; } .wheelcap { text-align:left; } }
+  .meta { display:flex; flex-wrap:wrap; gap:0; margin:28px 0 0; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .meta div { flex:1 1 140px; padding:12px 16px; border-right:1px solid var(--line); }
+  .meta div:last-child { border-right:0; }
+  .meta span { display:block; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); font-weight:600; }
+  .meta b { font-size:14px; font-weight:500; color:var(--fg); }
+  .abstract { margin:36px 0 0; padding:22px 24px; background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:4px 10px 10px 4px; }
+  .abstract .t { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); font-weight:600; margin-bottom:8px; }
+  .abstract p { margin:0; color:var(--fg); }
+  /* live stats */
+  .live { display:grid; grid-template-columns:repeat(4, 1fr); margin:24px 0 0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--surface); }
+  .live div { padding:16px 18px; border-right:1px solid var(--line); }
+  .live div:last-child { border-right:0; }
+  .live b { display:block; font-family:var(--mono); font-size:22px; font-weight:500; color:#fff; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+  .live span { font-size:12.5px; color:var(--dim); line-height:1.4; display:block; margin-top:4px; }
+  .livehead { display:flex; align-items:center; gap:8px; margin-top:28px; font-size:12px; color:var(--faint); letter-spacing:.06em; text-transform:uppercase; font-weight:600; }
+  .livehead i { width:7px; height:7px; border-radius:50%; background:var(--sq); box-shadow:0 0 0 3px #5fd3b533; }
+  @media (max-width:720px) { .live { grid-template-columns:1fr 1fr; } .live div:nth-child(2) { border-right:0; } .live div:nth-child(-n+2) { border-bottom:1px solid var(--line); } }
+  nav.toc { display:none; }
+  /* sections */
+  section { margin-top:72px; padding-top:28px; border-top:1px solid var(--line); scroll-margin-top:72px; }
+  h2 { font-size:26px; line-height:1.25; letter-spacing:-.02em; font-weight:650; color:#fff; margin-bottom:16px; display:flex; align-items:baseline; gap:14px; }
+  h2 span { font-family:var(--mono); font-size:13px; font-weight:500; color:var(--sq); letter-spacing:0; }
+  h3 { font-size:17px; font-weight:600; letter-spacing:-.01em; margin:32px 0 8px; color:#fff; }
+  p, ul, ol { margin-bottom:16px; color:#d9d3ca; }
+  ul, ol { padding-left:20px; }
+  li { margin-bottom:6px; padding-left:4px; }
+  li::marker { color:var(--faint); }
+  code { font-family:var(--mono); font-size:.84em; background:var(--raised); border:1px solid var(--line); padding:1px 6px; border-radius:5px; color:#f1d9b5; overflow-wrap:anywhere; }
+  pre { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px 18px; overflow-x:auto; margin:4px 0 20px; font-size:13px; line-height:1.65; }
+  pre code { background:none; border:0; padding:0; color:#e6dccb; }
+  .tbl { overflow-x:auto; margin:4px 0 20px; border:1px solid var(--line); border-radius:10px; }
+  table { border-collapse:collapse; width:100%; font-size:14px; font-variant-numeric:tabular-nums; }
+  th, td { text-align:left; padding:10px 14px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tr:last-child td { border-bottom:0; }
+  th { background:var(--surface); color:var(--dim); font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:.08em; }
+  td { color:#d9d3ca; }
+  .note { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:14px 18px; margin:20px 0; font-size:14px; color:var(--dim); }
+  .flow { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:8px 0 4px; font-size:13.5px; }
+  .flow div { background:var(--surface); border:1px solid var(--line2); border-radius:6px; padding:6px 12px; font-weight:500; }
+  .flow i { color:var(--faint); font-style:normal; }
+  .anim { width:100%; height:200px; display:block; background:var(--surface); border:1px solid var(--line); border-radius:10px; margin:16px 0 0; }
   .anim.short { height:180px; }
-  .cap { font-size:13px; color:var(--dim); margin-bottom:14px; }
-  footer { max-width:860px; margin:0 auto; padding:24px 16px 40px; color:var(--dim); font-size:14px; border-top:1px solid var(--line); }
+  .cap { font-size:13px; color:var(--dim); margin:10px 0 24px; line-height:1.55; }
+  .cap b { color:var(--fg); font-weight:600; }
+  footer { border-top:1px solid var(--line); }
+  footer .in { max-width:1160px; margin:0 auto; padding:28px 24px 48px; color:var(--faint); font-size:13px; display:flex; flex-wrap:wrap; gap:8px 24px; justify-content:space-between; }
+  footer a { color:var(--dim); }
 </style>
 </head>
 <body>
 <header class="top"><div class="in">
-  <a class="brand" href="../">Hamster Dash</a>
-  <a class="play" href="../">Play</a>
+  <a class="brand" href="../"><svg viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="50" cy="58" rx="40" ry="32" fill="#e8a25c"/><circle cx="34" cy="26" r="11" fill="#d98c45"/><circle cx="64" cy="28" r="10" fill="#d98c45"/><circle cx="70" cy="50" r="6" fill="#1a0f08"/><ellipse cx="60" cy="66" rx="22" ry="17" fill="#fbe7c8"/></svg>Hamster Dash <small>/ Whitepaper</small></a>
+  <nav class="links"><a class="hide-s" href="#economy">Economy</a><a class="hide-s" href="#data">API</a><a class="hide-s" href="https://github.com/bogemon458/hamsterdash" target="_blank" rel="noopener">GitHub</a><a class="play" href="../">Play now</a></nav>
 </div><div class="track"><i id="prog"></i><canvas id="runner" width="88" height="60"></canvas></div></header>
 
+<div class="page">
+<aside class="toc" id="side">
+  <div class="t">Contents</div>
+  <a href="#game"><span>01</span>The game</a>
+  <a href="#rounds"><span>02</span>Fair courses</a>
+  <a href="#wheel"><span>03</span>The real hamster</a>
+  <a href="#economy"><span>04</span>Economy</a>
+  <a href="#power"><span>05</span>Squeek power</a>
+  <a href="#data"><span>06</span>Data sources</a>
+  <a href="#safety"><span>07</span>Safety</a>
+  <a href="#limits"><span>08</span>Limits &amp; roadmap</a>
+</aside>
 <main>
   <div class="hero">
     <div>
-      <div class="kicker">Whitepaper · v1 · November 2026</div>
+      <div class="kicker">Technical whitepaper · v1.1</div>
       <h1>Hamster Dash</h1>
       <p class="lead">An endless runner built on top of Squeekchain, the blockchain powered by a real hamster on a real wheel. The course, the bonuses and the rewards in the game all come from live Squeekchain data, and the reward math uses the same rules as the chain.</p>
     </div>
@@ -101,6 +150,18 @@
     <a href="#limits">8. Limits &amp; ideas</a>
   </nav>
 
+  <div class="meta">
+    <div><span>Version</span><b>1.1 · Nov 2026</b></div>
+    <div><span>Network</span><b>Squeekchain · Sepolia</b></div>
+    <div><span>Wallet access</span><b>None (read-only)</b></div>
+    <div><span>License</span><b>MIT, open source</b></div>
+  </div>
+
+  <div class="abstract"><div class="t">Abstract</div>
+    <p>Hamster Dash maps Squeekchain's proof-of-wheel economy onto a playable endless runner. Courses are seeded by the live Squeekchain round, so every player in a round races the same track. Collected seeds act as work units at the chain's live difficulty, finished blocks issue SQK on the real issuance schedule, and checkpoint flags settle that SQK into a stake whose power follows SqueekStaking's formula. When the real hamster is on its wheel, the game shows it and pays double. Everything is read from public endpoints. The game never touches a wallet.</p>
+  </div>
+
+  <div class="livehead"><i></i>Live from api.squeekchain.com</div>
   <div class="live" id="live">
     <div><b id="lvRound">…</b><span>Squeekchain round right now</span></div>
     <div><b id="lvReward">…</b><span>SQK per Squeek block right now</span></div>
@@ -109,25 +170,26 @@
   </div>
 
   <section id="game">
-    <h2><span>1</span>The game</h2>
-    <p>You play a hamster running through four areas: the Burrow, Sunny Meadow, Sunset Hills and Night Forest. The area changes every 150 m. You hop over pebbles, sharp grey rocks and roots, and duck under eagles and bats. Speed goes up with distance, so a run gets harder the longer you last.</p>
+    <h2><span>01</span>The game</h2>
+    <p>You play a hamster running through four areas: the Burrow, Sunny Meadow, Sunset Hills and Night Forest. The area changes every 150 m. You hop over pebbles, sharp grey rocks and roots, and duck under eagles and bats, or land on top of them to stomp them. Speed goes up with distance, so a run gets harder the longer you last.</p>
     <ul>
       <li><b>Hop:</b> Space, ↑, W or tap. Hold for a higher hop, press again in the air for a double hop.</li>
       <li><b>Duck:</b> ↓ or S, or the button on phones. Ducking in the air makes you fall fast.</li>
+      <li><b>Stomp:</b> land on an eagle or bat while falling to knock it out. You bounce back up with your double hop restored. Each stomp is worth 50 points, and chaining stomps without touching the ground multiplies it (50, 100, 150…).</li>
       <li><b>Seeds</b> are worth 10 points each and are also your <i>work</i> (section 4). A <b>golden seed</b> gives you a shield that blocks one hit.</li>
-      <li><b>Score</b> = seeds × 10 + metres run. Wallets and Squeeks don't change your score, so everyone on the same course competes on equal terms.</li>
+      <li><b>Score</b> = seeds × 10 + metres run + stomp points. Seed rows never sit right in front of a hazard, and some seed arcs trace the hop over an obstacle. Wallets and Squeeks don't change your score, so everyone on the same course competes on equal terms.</li>
     </ul>
   </section>
 
   <section id="rounds">
-    <h2><span>2</span>Fair courses, one per round</h2>
+    <h2><span>02</span>Fair courses, one per round</h2>
     <p>Squeekchain splits time into 10-minute rounds, counted from the genesis time in the core contract. The game reads <code>genesisTimestamp</code> and <code>roundDuration</code> from <code>/v1/core</code> and works out the current round the same way the chain does:</p>
     <pre><code>round = floor((now − genesisTimestamp) / roundDuration) + 1</code></pre>
     <p>That round number seeds the random generator behind obstacles, seeds and flyers. So every player in the same round gets the exact same course, and a new course starts when the round rolls over. Speed depends only on distance, so the course plays the same on a slow phone as on a fast PC. Your best score for each round is saved, so you can compare runs with friends playing the same round.</p>
   </section>
 
   <section id="wheel">
-    <h2><span>3</span>The real hamster</h2>
+    <h2><span>03</span>The real hamster</h2>
     <p>Every 5 seconds the game checks <code>/v1/status</code> to see what the wheel is doing. When <code>coreStatus</code> is <code>ACTIVE</code>, the real hamster is running:</p>
     <ul>
       <li>a "LIVE" ghost hamster runs along the far ridge at the wheel's real speed (<code>speedMmPerSecond</code>);</li>
@@ -138,14 +200,14 @@
   </section>
 
   <section id="economy">
-    <h2><span>4</span>Economy: the same rules as Squeekchain</h2>
+    <h2><span>04</span>Economy: the same rules as Squeekchain</h2>
     <p>The game has a small economy that copies how SQK is created on Squeekchain (see the <a href="https://docs.squeekchain.com/rewards/" target="_blank" rel="noopener">Rewards docs</a>). It follows the same steps as the chain, with seeds in place of wheel turns:</p>
     <div class="flow">
       <div>Seeds = work</div><i>→</i><div>Squeek block</div><i>→</i><div>SQK issued</div><i>→</i><div>Checkpoint flag</div><i>→</i><div>Staked</div>
     </div>
 
     <canvas class="anim" id="econ" aria-label="Animation: seeds fill a Squeek block, the block issues SQK, a checkpoint flag stakes it"></canvas>
-    <div class="cap">Every seed is work. Enough work finishes a Squeek block, the block issues SQK as <i>pending</i>, and the next STAKE flag turns it into <i>staked</i>.</div>
+    <div class="cap"><b>Figure 1.</b> Every seed is work. Enough work finishes a Squeek block, the block issues SQK as <i>pending</i>, and the next STAKE flag turns it into <i>staked</i>.</div>
     <h3>4.1 Work and blocks</h3>
     <p>On Squeekchain, every magnet pass on the wheel is one unit of work, and a Squeek block finishes when enough work is done at the current difficulty. In the game every seed is one unit of work (two while the real wheel is running), and the work needed per block comes straight from the chain:</p>
     <pre><code>work per block = workPerThousandBlocks / 1000   (live from /v1/core)</code></pre>
@@ -180,7 +242,7 @@ S = your Dash stake, P = Squeek power of your staked Squeeks</code></pre>
   </section>
 
   <section id="power">
-    <h2><span>5</span>Squeek power</h2>
+    <h2><span>05</span>Squeek power</h2>
     <p>Paste a wallet address in the menu (or open <code>hamsterdash.site/?address=0x…</code>) and the game reads that account from <code>/v1/accounts/{address}</code>:</p>
     <ul>
       <li>Owning any Squeek, in the wallet or staked, unlocks the teal Squeek skin.</li>
@@ -193,12 +255,12 @@ S = your Dash stake, P = Squeek power of your staked Squeeks</code></pre>
       <tr><td>Boost (one staked)</td><td>×2</td><td>×3.2</td><td>×5.84</td><td>×11.6</td><td>×24.4</td></tr>
     </table></div>
     <canvas class="anim short" id="merge" aria-label="Animation: two Level 1 Squeeks merge into one Level 2 Squeek"></canvas>
-    <div class="cap">Two Level 1 Squeeks (1,000 power each) merge into one Level 2 Squeek with 2,200 power, 10% more than the pair.</div>
+    <div class="cap"><b>Figure 2.</b> Two Level 1 Squeeks (1,000 power each) merge into one Level 2 Squeek with 2,200 power, 10% more than the pair.</div>
     <p>Each level has 2.2 times the power of the one below, so merging two Squeeks always gives a bit more boost than keeping the pair.</p>
   </section>
 
   <section id="data">
-    <h2><span>6</span>Data sources</h2>
+    <h2><span>06</span>Data sources</h2>
     <div class="tbl"><table>
       <tr><th>Source</th><th>Used for</th><th>How often</th></tr>
       <tr><td><code>/v1/core</code></td><td>Round clock, difficulty, Squeek block height</td><td>Every 20 s</td></tr>
@@ -211,7 +273,7 @@ S = your Dash stake, P = Squeek power of your staked Squeeks</code></pre>
   </section>
 
   <section id="safety">
-    <h2><span>7</span>Safety and honesty</h2>
+    <h2><span>07</span>Safety and honesty</h2>
     <ul>
       <li><b>Read-only.</b> No wallet connect, no signatures, no transactions. A pasted address is only used to read public data.</li>
       <li><b>Simulated SQK.</b> SQK in the game is simulated with Squeekchain's rules. It's not a real token, can't be claimed, and only lives in your browser.</li>
@@ -221,7 +283,7 @@ S = your Dash stake, P = Squeek power of your staked Squeeks</code></pre>
   </section>
 
   <section id="limits">
-    <h2><span>8</span>Limits and ideas</h2>
+    <h2><span>08</span>Limits and roadmap</h2>
     <p>Being clear about what the game does <i>not</i> do yet:</p>
     <ul>
       <li>Scores are only saved in your own browser. There is no shared leaderboard yet.</li>
@@ -232,8 +294,9 @@ S = your Dash stake, P = Squeek power of your staked Squeeks</code></pre>
     <div class="note">Hamster Dash is a community project and is not run by the Squeekchain team. Squeekchain project ID: <code>478ab808-9282-4b50-b1b0-4aa3b852f280</code></div>
   </section>
 </main>
+</div>
 
-<footer>Hamster Dash · <a href="../">Play</a> · <a href="https://github.com/bogemon458/hamsterdash" target="_blank" rel="noopener">Source</a> · Built for <a href="https://squeekchain.com" target="_blank" rel="noopener">Squeekchain</a></footer>
+<footer><div class="in"><span>Hamster Dash · community project built for <a href="https://squeekchain.com" target="_blank" rel="noopener">Squeekchain</a></span><span><a href="../">Play</a> · <a href="https://github.com/bogemon458/hamsterdash" target="_blank" rel="noopener">Source</a> · <a href="https://docs.squeekchain.com" target="_blank" rel="noopener">Squeekchain docs</a></span></div></footer>
 
 <script>
 (() => {
@@ -297,7 +360,7 @@ S = your Dash stake, P = Squeek power of your staked Squeeks</code></pre>
     c.strokeStyle = gold ? '#fff6c8' : '#f4ecd6'; c.lineWidth = 2 * s;
     c.beginPath(); c.moveTo(0, -8 * s); c.lineTo(0, 8 * s); c.stroke(); c.restore();
   }
-  const font = (px, w = 600) => `${w} ${px}px Fredoka, sans-serif`;
+  const font = (px, w = 500) => `${w} ${px}px Inter, system-ui, sans-serif`;
   function fit(cv) { // match the canvas to its CSS size (crisp on retina)
     const d = Math.min(2, devicePixelRatio || 1), w = cv.clientWidth, h = cv.clientHeight;
     if (cv.width !== Math.round(w * d) || cv.height !== Math.round(h * d)) { cv.width = Math.round(w * d); cv.height = Math.round(h * d); }
@@ -411,6 +474,9 @@ S = your Dash stake, P = Squeek power of your staked Squeeks</code></pre>
   }
 
   // 4) reading progress: a little hamster runs along the bar under the header
+  const tocLinks = [...document.querySelectorAll('#side a')];
+  const spy = new IntersectionObserver(es => { for (const e of es) if (e.isIntersecting) tocLinks.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id)); }, { rootMargin: '-30% 0px -60% 0px' });
+  document.querySelectorAll('main section').forEach(s => spy.observe(s));
   const runner = document.getElementById('runner'), prog = document.getElementById('prog');
   let lastScroll = -1, movingT = 0, pr = 0;
   function drawRunner(t, dt) {

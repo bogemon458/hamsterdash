@@ -29,6 +29,7 @@ Full write-up: [hamsterdash.site/whitepaper](https://hamsterdash.site/whitepaper
 ## Controls
 - **Space / ↑ / W** or **tap** — hop; hold for a higher hop, press again mid-air for a double hop
 - **↓ / S** or the **⬇ button** on phones — duck (mid-air: fast fall)
+- **Land on an eagle or bat** to stomp it: +50 points, bounce back up with your double hop restored; chain stomps in the air for x2, x3… combos
 - **P / Esc** — pause · **M** — mute
 
 ## Gameplay
@@ -36,6 +37,8 @@ Full write-up: [hamsterdash.site/whitepaper](https://hamsterdash.site/whitepaper
 - Four areas that cross-fade every 150 m: The Burrow → Sunny Meadow → Sunset Hills → Night Forest (and around again)
 - Air enemies from 50 m: eagles in daylight, bats underground and at night — high flyers punish a jump, mid flyers must be ducked (or hopped), low flyers must be hopped; a red "!" warns before they arrive
 - Pebbles, roots, mounds and pebble pairs; spacing always leaves room for a full hop at the current speed
+- Seed rows are placed clear of hazards (with a reaction gap), and some seed arcs trace the hop over an obstacle
+- Painted parallax backdrops (sky, clouds, mountains, trees, bushes, textured soil), generated procedurally in the browser: no image files
 - Golden seeds grant a one-hit shield; the hamster's cheeks grow as it eats
 - Coyote time + jump buffering for forgiving controls; milestones, score pop-ups, screen shake
 - Synthesized sound effects (Web Audio, no asset files); best score saved locally
